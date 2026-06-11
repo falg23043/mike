@@ -31,7 +31,7 @@ const MAX_TOKENS = 16384;
 function client(): AnthropicBedrock {
     const accessKey = process.env.AWS_ACCESS_KEY_ID;
     const secretKey = process.env.AWS_SECRET_ACCESS_KEY;
-    const region = process.env.AWS_REGION ?? "us-east-1";
+    const region = process.env.AWS_REGION ?? "ca-central-1";
     if (accessKey && secretKey) {
         return new AnthropicBedrock({
             awsAccessKey: accessKey,
