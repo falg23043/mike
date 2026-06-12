@@ -125,12 +125,6 @@ export default function LoginPage() {
                         </Button>
                     </form>
                 </div>
-                <p className="text-center text-xs text-gray-500 leading-relaxed px-2">
-                    Mike hosted on MikeOSS.com is currently a demo service.
-                    Please do not upload, submit, or store sensitive,
-                    confidential, privileged, client, or personally
-                    identifiable documents.
-                </p>
             </div>
         </div>
     );

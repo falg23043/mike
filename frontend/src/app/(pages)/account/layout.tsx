@@ -19,9 +19,6 @@ const TABS: TabDef[] = [
         label: "Privacy & Data",
         href: "/account/privacy-data",
     },
-    { id: "security", label: "Security", href: "/account/security" },
-    { id: "models", label: "Model Preferences", href: "/account/models" },
-    { id: "api-keys", label: "API Keys", href: "/account/api-keys" },
 ];
 
 export default function AccountLayout({
