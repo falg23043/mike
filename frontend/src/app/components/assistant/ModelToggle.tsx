@@ -22,14 +22,11 @@ export interface ModelOption {
 export const MODELS: ModelOption[] = [
     { id: "bedrock-claude-opus-4-8",   label: "Claude Opus 4.8",   group: "Bedrock" },
     { id: "bedrock-claude-sonnet-4-6", label: "Claude Sonnet 4.6", group: "Bedrock" },
-    { id: "gemini-3.1-pro-preview",    label: "Gemini 3.1 Pro",   group: "Google" },
-    { id: "gemini-3-flash-preview",    label: "Gemini 3 Flash",   group: "Google" },
 ];
 
 export const SETTINGS_MODELS: ModelOption[] = [
     ...MODELS,
-    { id: "bedrock-claude-haiku-4-5",      label: "Claude Haiku 4.5",      group: "Bedrock" },
-    { id: "gemini-3.1-flash-lite-preview", label: "Gemini 3.1 Flash Lite", group: "Google" },
+    { id: "bedrock-claude-haiku-4-5", label: "Claude Haiku 4.5", group: "Bedrock" },
 ];
 
 export const DEFAULT_MODEL_ID = "bedrock-claude-opus-4-8";
