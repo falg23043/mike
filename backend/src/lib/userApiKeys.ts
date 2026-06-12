@@ -154,10 +154,7 @@ export async function getUserApiKeys(
     db: Db = createServerSupabase(),
 ): Promise<UserApiKeys> {
     const apiKeys: UserApiKeys = {
-        claude: envApiKey("claude"),
         gemini: envApiKey("gemini"),
-        openai: envApiKey("openai"),
-        openrouter: envApiKey("openrouter"),
         courtlistener: envApiKey("courtlistener"),
     };
 
@@ -170,8 +167,8 @@ export async function getUserApiKeys(
     for (const row of (data ?? []) as EncryptedKeyRow[]) {
         const provider = normalizeApiKeyProvider(row.provider);
         if (!provider) continue;
-        if (apiKeys[provider]?.trim()) continue;
-        apiKeys[provider] = decrypt(row);
+        if ((apiKeys as Record<string, string | null | undefined>)[provider]?.trim()) continue;
+        (apiKeys as Record<string, string | null | undefined>)[provider] = decrypt(row);
     }
 
     return apiKeys;

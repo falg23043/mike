@@ -147,6 +147,7 @@ documentsRouter.get("/:documentId/display", requireAuth, async (req, res) => {
       .status(404)
       .json({ detail: "Document not found in storage" });
 
+  res.setHeader("Cache-Control", "no-store");
   if (fileType === "pdf" || (isDocx && active.pdf_storage_path)) {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -323,6 +324,7 @@ documentsRouter.get("/:documentId/docx", requireAuth, async (req, res) => {
       ),
     ),
   );
+  res.setHeader("Cache-Control", "no-store");
   res.send(Buffer.from(raw));
 });
 

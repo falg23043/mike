@@ -198,7 +198,7 @@ export async function streamOpenAI(
         enableThinking,
     } = params;
     const maxIter = params.maxIterations ?? 10;
-    const key = apiKey(apiKeys?.openai);
+    const key = apiKey((apiKeys as Record<string, string | null | undefined>)?.openai);
     const responseTools = toResponseTools(tools);
     let input = toResponseInput(params.messages);
     let previousResponseId: string | undefined;

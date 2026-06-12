@@ -1153,8 +1153,11 @@ export async function resolveTrackedChange(
 // ---------------------------------------------------------------------------
 
 function ensureXmlDeclaration(xml: string): string {
-    if (xml.startsWith("<?xml")) return xml;
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${xml}`;
+    // Strip UTF-8 BOM (\uFEFF) if present — it causes startsWith("<?xml") to
+    // miss the declaration and prepend a duplicate, producing invalid XML.
+    const stripped = xml.startsWith("\uFEFF") ? xml.slice(1) : xml;
+    if (stripped.startsWith("<?xml")) return stripped;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${stripped}`;
 }
 
 function truncate(s: string, n: number): string {

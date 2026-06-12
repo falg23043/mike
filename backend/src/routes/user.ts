@@ -4,8 +4,7 @@ import { createServerSupabase } from "../lib/supabase";
 import {
     DEFAULT_TABULAR_MODEL,
     DEFAULT_TITLE_MODEL,
-    CLAUDE_LOW_MODELS,
-    OPENAI_LOW_MODELS,
+    BEDROCK_LOW_MODELS,
     resolveModel,
 } from "../lib/llm";
 import {
@@ -151,11 +150,7 @@ function serializeProfile(row: UserProfileRow, apiKeyStatus?: ApiKeyStatus) {
     const creditsUsed = row.message_credits_used ?? 0;
     const titleFallback = apiKeyStatus?.gemini
         ? DEFAULT_TITLE_MODEL
-        : apiKeyStatus?.openai
-          ? OPENAI_LOW_MODELS[0]
-          : apiKeyStatus?.claude
-            ? CLAUDE_LOW_MODELS[0]
-            : DEFAULT_TITLE_MODEL;
+        : BEDROCK_LOW_MODELS[0];
     return {
         displayName: row.display_name,
         organisation: row.organisation,

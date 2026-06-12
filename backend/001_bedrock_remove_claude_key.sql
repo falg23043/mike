@@ -1,6 +1,4 @@
 -- Migration 001: Replace per-user Claude API key with AWS Bedrock server-side credentials
--- Bedrock credentials are injected as env vars (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION).
--- No personal API keys are stored per-user for Claude models.
 
 -- Remove claude_api_key column (no longer needed)
 ALTER TABLE public.user_profiles DROP COLUMN IF EXISTS claude_api_key;
@@ -11,9 +9,4 @@ ALTER TABLE public.user_profiles ALTER COLUMN tabular_model SET DEFAULT 'bedrock
 -- Migrate existing user preferences to Bedrock equivalents
 UPDATE public.user_profiles
   SET tabular_model = 'bedrock-claude-haiku-4-5'
-  WHERE tabular_model IN ('claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-7');
-
--- Also migrate any users who still have the old Gemini default to the new Bedrock default
-UPDATE public.user_profiles
-  SET tabular_model = 'bedrock-claude-haiku-4-5'
-  WHERE tabular_model = 'gemini-3-flash-preview';
+  WHERE tabular_model IN ('claude-haiku-4-5', 'claude-sonnet-4-6', 'claude-opus-4-7', 'claude-opus-4-8', 'gemini-3-flash-preview');

@@ -114,7 +114,7 @@ export async function streamClaude(
         enableThinking,
     } = params;
     const maxIter = params.maxIterations ?? 10;
-    const anthropic = client(apiKeys?.claude);
+    const anthropic = client(apiKeys?.gemini as unknown as string);
     const claudeTools = toClaudeTools(tools);
 
     const messages: NativeMessage[] = toNativeMessages(params.messages);

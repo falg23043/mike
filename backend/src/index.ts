@@ -101,6 +101,7 @@ app.use(
       },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
     hsts: isProduction
       ? {
           maxAge: 15552000,

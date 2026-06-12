@@ -1,7 +1,7 @@
 import { SETTINGS_MODELS, type ModelOption } from "../components/assistant/ModelToggle";
 import type { ApiKeyState } from "@/app/lib/mikeApi";
 
-export type ModelProvider = "claude" | "gemini" | "openai";
+export type ModelProvider = "bedrock" | "gemini";
 
 export function getModelProvider(modelId: string): ModelProvider | null {
     const model = SETTINGS_MODELS.find((m) => m.id === modelId);
@@ -15,6 +15,7 @@ export function isModelAvailable(
 ): boolean {
     const provider = getModelProvider(modelId);
     if (!provider) return false;
+    if (provider === "bedrock") return true; // always available — server-side credentials
     return isProviderAvailable(provider, apiKeys);
 }
 
@@ -22,19 +23,18 @@ export function isProviderAvailable(
     provider: ModelProvider,
     apiKeys: ApiKeyState,
 ): boolean {
+    if (provider === "bedrock") return true;
     return !!apiKeys[provider]?.configured;
 }
 
 export function providerLabel(provider: ModelProvider): string {
-    if (provider === "claude") return "Anthropic (Claude)";
-    if (provider === "openai") return "OpenAI";
+    if (provider === "bedrock") return "AWS Bedrock (Claude)";
     return "Google (Gemini)";
 }
 
 export function modelGroupToProvider(
     group: ModelOption["group"],
 ): ModelProvider {
-    if (group === "Anthropic") return "claude";
-    if (group === "OpenAI") return "openai";
+    if (group === "Bedrock") return "bedrock";
     return "gemini";
 }

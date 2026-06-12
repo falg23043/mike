@@ -61,13 +61,13 @@ function formatPromptSuffix(format?: string, tags?: string[]): string {
 export const tabularRouter = Router();
 
 function providerLabel(provider: Provider): string {
-    if (provider === "claude") return "Anthropic";
-    if (provider === "openai") return "OpenAI";
+    if (provider === "bedrock") return "AWS Bedrock";
     return "Gemini";
 }
 
 function missingModelApiKey(model: string, apiKeys: UserApiKeys) {
     const provider = providerForModel(model);
+    if (provider === "bedrock") return null; // always available server-side
     if (apiKeys[provider]?.trim()) return null;
     return {
         provider,

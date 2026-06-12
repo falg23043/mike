@@ -3,7 +3,6 @@ import {
     resolveModel,
     DEFAULT_TITLE_MODEL,
     DEFAULT_TABULAR_MODEL,
-    OPENAI_LOW_MODELS,
     type UserApiKeys,
 } from "./llm";
 import { getUserApiKeys as getStoredUserApiKeys } from "./userApiKeys";
@@ -14,14 +13,12 @@ export type UserModelSettings = {
     api_keys: UserApiKeys;
 };
 
-// Title generation is a lightweight task — always routed to the cheapest model
-// of whichever provider the user has keys for: Gemini Flash Lite if Gemini is
-// available, otherwise OpenAI lite, otherwise Claude Haiku. With no user keys
-// set, defaults to Gemini (the dev-mode env fallback).
+// Title generation is a lightweight task — always routed to Bedrock Haiku.
+// Falls back to Gemini if the user has a Gemini key and no AWS creds.
 function resolveTitleModel(apiKeys: UserApiKeys): string {
+    const hasAws = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY;
+    if (hasAws) return DEFAULT_TITLE_MODEL; // Bedrock Haiku
     if (apiKeys.gemini?.trim()) return DEFAULT_TITLE_MODEL;
-    if (apiKeys.openai?.trim()) return OPENAI_LOW_MODELS[0];
-    if (apiKeys.claude?.trim()) return "claude-haiku-4-5";
     return DEFAULT_TITLE_MODEL;
 }
 
