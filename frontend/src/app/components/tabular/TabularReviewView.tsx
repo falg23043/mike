@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Loader2, Play, ChevronDown, MessageSquare, Download, Users, Upload, X } from "lucide-react";
 
@@ -463,6 +464,24 @@ export function TRView({ reviewId, projectId }: Props) {
         }
     }
 
+    async function handleReorderColumns(
+        activeColIndex: number,
+        overColIndex: number,
+    ) {
+        const activePos = columns.findIndex((c) => c.index === activeColIndex);
+        const overPos = columns.findIndex((c) => c.index === overColIndex);
+        if (activePos === -1 || overPos === -1 || activePos === overPos) return;
+        const previousColumns = columns;
+        const reordered = arrayMove(columns, activePos, overPos);
+        setColumns(reordered);
+        try {
+            await saveColumnsConfig(reordered);
+        } catch (err) {
+            setColumns(previousColumns);
+            console.error("Failed to reorder columns", err);
+        }
+    }
+
     function handleTabularCitationClick(colIdx: number, rowIdx: number) {
         setSearch("");
         setHighlightedCell({ colIdx, rowIdx });
@@ -801,6 +820,7 @@ export function TRView({ reviewId, projectId }: Props) {
                             onDeleteColumn={handleDeleteColumn}
                             onAddColumn={() => setAddColOpen(true)}
                             onAddDocuments={() => setAddDocsOpen(true)}
+                            onReorderColumns={handleReorderColumns}
                         />
                     </div>
                 </div>

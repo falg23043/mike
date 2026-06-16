@@ -145,11 +145,7 @@ function ModelPreferenceDropdown({
     const [isOpen, setIsOpen] = useState(false);
     const selected = options.find((m) => m.id === value);
     const selectedAvailable = apiKeys ? isModelAvailable(value, apiKeys) : true;
-    const groups: ("Anthropic" | "Google" | "OpenAI")[] = [
-        "Anthropic",
-        "Google",
-        "OpenAI",
-    ];
+    const groups: ("Bedrock")[] = ["Bedrock"];
 
     return (
         <DropdownMenu onOpenChange={setIsOpen}>

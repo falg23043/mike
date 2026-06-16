@@ -1,7 +1,21 @@
 "use client";
 
 import { forwardRef, useImperativeHandle, useRef } from "react";
-import { Loader2, Plus, Table2, Upload } from "lucide-react";
+import { GripVertical, Loader2, Plus, Table2, Upload } from "lucide-react";
+import {
+    DndContext,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    horizontalListSortingStrategy,
+    useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type {
     ColumnConfig,
     Document,
@@ -43,6 +57,70 @@ interface Props {
     onDeleteColumn: (colIndex: number) => void;
     onAddColumn: () => void;
     onAddDocuments: () => void;
+    onReorderColumns?: (activeColIndex: number, overColIndex: number) => void;
+}
+
+// ---------------------------------------------------------------------------
+// Sortable column header (used inside TRTable header row)
+// ---------------------------------------------------------------------------
+interface SortableColumnHeaderProps {
+    col: ColumnConfig;
+    savingColumn: boolean;
+    savingColumnsConfig: boolean;
+    onUpdateColumn: (col: ColumnConfig) => void;
+    onDeleteColumn: (colIndex: number) => void;
+}
+
+function SortableColumnHeader({
+    col,
+    savingColumn,
+    savingColumnsConfig,
+    onUpdateColumn,
+    onDeleteColumn,
+}: SortableColumnHeaderProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: col.index });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 10 : undefined,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            className={`${COL_W} border-b border-r border-gray-200 p-2 text-left text-xs font-medium text-gray-500 select-none`}
+        >
+            <div className="flex items-center gap-1">
+                <button
+                    type="button"
+                    className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 transition-colors shrink-0 touch-none"
+                    {...listeners}
+                    tabIndex={-1}
+                    aria-label="Drag to reorder column"
+                >
+                    <GripVertical className="h-3.5 w-3.5" />
+                </button>
+                <span className="truncate flex-1">{col.name}</span>
+                <TREditColumnMenu
+                    column={col}
+                    disabled={savingColumn || savingColumnsConfig}
+                    onSave={onUpdateColumn}
+                    onDelete={onDeleteColumn}
+                />
+            </div>
+        </div>
+    );
 }
 
 export const TRTable = forwardRef<TRTableHandle, Props>(function TRTable(
@@ -64,14 +142,24 @@ export const TRTable = forwardRef<TRTableHandle, Props>(function TRTable(
         onDeleteColumn,
         onAddColumn,
         onAddDocuments,
+        onReorderColumns,
     },
     ref,
 ) {
     const stickyCellBg = "bg-[#fcfcfd]";
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const sortedColumns = [...columns].sort((a, b) => a.index - b.index);
     const totalContentWidth =
-        DOC_COL_W_PX + sortedColumns.length * DATA_COL_W_PX + 32;
+        DOC_COL_W_PX + columns.length * DATA_COL_W_PX + 32;
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    );
+
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        onReorderColumns?.(active.id as number, over.id as number);
+    }
 
     useImperativeHandle(ref, () => ({
         scrollToCell(colIdx: number, rowIdx: number) {
@@ -243,22 +331,27 @@ export const TRTable = forwardRef<TRTableHandle, Props>(function TRTable(
                     />
                     <span>Document</span>
                 </div>
-                {columns.map((col) => (
-                    <div
-                        key={col.index}
-                        className={`${COL_W} border-b border-r border-gray-200 p-2 text-left text-xs font-medium text-gray-500 select-none`}
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <SortableContext
+                        items={columns.map((c) => c.index)}
+                        strategy={horizontalListSortingStrategy}
                     >
-                        <div className="flex items-center justify-between gap-3">
-                            <span className="truncate">{col.name}</span>
-                            <TREditColumnMenu
-                                column={col}
-                                disabled={savingColumn || savingColumnsConfig}
-                                onSave={onUpdateColumn}
-                                onDelete={onDeleteColumn}
+                        {columns.map((col) => (
+                            <SortableColumnHeader
+                                key={col.index}
+                                col={col}
+                                savingColumn={savingColumn}
+                                savingColumnsConfig={savingColumnsConfig}
+                                onUpdateColumn={onUpdateColumn}
+                                onDeleteColumn={onDeleteColumn}
                             />
-                        </div>
-                    </div>
-                ))}
+                        ))}
+                    </SortableContext>
+                </DndContext>
                 <div className="flex-1 border-b border-gray-200 flex items-center justify-start p-2 min-w-8">
                     <button
                         onClick={onAddColumn}
@@ -294,7 +387,7 @@ export const TRTable = forwardRef<TRTableHandle, Props>(function TRTable(
                                 {filename}
                             </span>
                         </div>
-                        {sortedColumns.map((col) => (
+                        {columns.map((col) => (
                             <div
                                 key={col.index}
                                 className={`${COL_W} border-b border-r border-gray-200 p-2`}
@@ -333,11 +426,8 @@ export const TRTable = forwardRef<TRTableHandle, Props>(function TRTable(
                                     {doc.filename}
                                 </span>
                             </div>
-                            {columns.map((col) => {
+                            {columns.map((col, colPos) => {
                                 const cell = getCell(doc.id, col.index);
-                                const colPos = sortedColumns.findIndex(
-                                    (c) => c.index === col.index,
-                                );
                                 const isHighlighted =
                                     highlightedCell?.colIdx === colPos &&
                                     highlightedCell?.rowIdx === docIdx;

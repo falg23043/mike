@@ -40,7 +40,7 @@ export async function exportTabularReviewToExcel(params: {
 }) {
     const { reviewTitle, columns, documents, cells } = params;
 
-    const sortedCols = [...columns].sort((a, b) => a.index - b.index);
+    // Use array order (= on-screen order) — no index sort
     const cellMap = new Map<string, TabularCell>();
     for (const c of cells) cellMap.set(`${c.document_id}:${c.column_index}`, c);
 
@@ -49,7 +49,7 @@ export async function exportTabularReviewToExcel(params: {
 
     ws.columns = [
         { header: "Document", width: 40 },
-        ...sortedCols.map((c) => ({ header: c.name, width: 40 })),
+        ...columns.map((c) => ({ header: c.name, width: 40 })),
     ];
 
     const headerRow = ws.getRow(1);
@@ -63,7 +63,7 @@ export async function exportTabularReviewToExcel(params: {
 
     for (const doc of documents) {
         const row: string[] = [doc.filename];
-        for (const col of sortedCols) {
+        for (const col of columns) {
             row.push(formatCellForExport(cellMap.get(`${doc.id}:${col.index}`)));
         }
         const excelRow = ws.addRow(row);

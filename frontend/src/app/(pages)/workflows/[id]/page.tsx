@@ -3,7 +3,22 @@
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ChevronDown, Plus, Users, X } from "lucide-react";
+import { ChevronDown, GripVertical, Plus, Users, X } from "lucide-react";
+import {
+    DndContext,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    arrayMove,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { getWorkflow, updateWorkflow } from "@/app/lib/mikeApi";
 import { ShareWorkflowModal } from "@/app/components/workflows/ShareWorkflowModal";
 import { WFEditColumnModal } from "@/app/components/workflows/WFEditColumnModal";
@@ -33,6 +48,109 @@ interface Props {
 type SaveStatus = "idle" | "saving" | "saved";
 
 const NAME_COL_W = "w-[332px] shrink-0";
+
+// ---------------------------------------------------------------------------
+// Sortable row for workflow column list
+// ---------------------------------------------------------------------------
+interface SortableWorkflowRowProps {
+    col: ColumnConfig;
+    isChecked: boolean;
+    readOnly: boolean;
+    stickyCellBg: string;
+    FormatIcon: React.ElementType;
+    onRowClick: () => void;
+    onCheckChange: () => void;
+    onDelete: (e: React.MouseEvent) => void;
+}
+
+function SortableWorkflowRow({
+    col,
+    isChecked,
+    readOnly,
+    stickyCellBg,
+    FormatIcon,
+    onRowClick,
+    onCheckChange,
+    onDelete,
+}: SortableWorkflowRowProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: col.index });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition: isDragging ? undefined : 'none',
+        opacity: isDragging ? 0.4 : 1,
+        zIndex: isDragging ? 10 : undefined,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            onClick={onRowClick}
+            className="group flex items-center h-10 pr-8 border-b border-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+        >
+            <div
+                className={`sticky left-0 z-[60] ${NAME_COL_W} py-2 pl-4 pr-2 ${
+                    isChecked ? "bg-gray-50" : stickyCellBg
+                } transition-colors group-hover:bg-gray-100`}
+            >
+                <div className="flex min-w-0 items-center gap-2">
+                    {!readOnly && (
+                        <button
+                            type="button"
+                            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 transition-colors shrink-0 touch-none"
+                            {...listeners}
+                            tabIndex={-1}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label="Drag to reorder"
+                        >
+                            <GripVertical className="h-3.5 w-3.5" />
+                        </button>
+                    )}
+                    <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={onCheckChange}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-2.5 w-2.5 shrink-0 rounded border-gray-200 cursor-pointer accent-black"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800">
+                        {col.name}
+                    </span>
+                </div>
+            </div>
+            <div className="ml-auto w-36 shrink-0">
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600">
+                    <FormatIcon className="h-3.5 w-3.5 text-gray-400" />
+                    {formatLabel(col.format ?? "text")}
+                </span>
+            </div>
+            <div className="flex-1 min-w-0 pr-4">
+                <span className="text-xs text-gray-500 truncate block">
+                    {col.prompt}
+                </span>
+            </div>
+            {!readOnly && (
+                <div className="w-8 shrink-0 flex justify-end">
+                    <button
+                        onClick={onDelete}
+                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                        <X className="h-3.5 w-3.5" />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -183,6 +301,32 @@ export default function WorkflowDetailPage({ params }: Props) {
         setColumns(next);
         saveColumns(next);
         setEditingColumn(null);
+    }
+
+    function handleColumnsReordered(
+        activeColIndex: number,
+        overColIndex: number,
+    ) {
+        if (readOnly) return;
+        const activePos = columns.findIndex((c) => c.index === activeColIndex);
+        const overPos = columns.findIndex((c) => c.index === overColIndex);
+        if (activePos === -1 || overPos === -1 || activePos === overPos) return;
+        const next = arrayMove(columns, activePos, overPos).map((c, i) => ({
+            ...c,
+            index: i,
+        }));
+        setColumns(next);
+        saveColumns(next);
+    }
+
+    const wfSensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    );
+
+    function handleWfDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        handleColumnsReordered(active.id as number, over.id as number);
     }
 
     // ---------------------------------------------------------------------------
@@ -373,7 +517,8 @@ export default function WorkflowDetailPage({ params }: Props) {
                         <div className="min-w-max flex min-h-full flex-col">
                         {/* Table header */}
                         <div className="flex items-center h-8 pr-8 border-b border-gray-200 text-xs text-gray-500 font-medium shrink-0 select-none">
-                            <div className={`sticky left-0 z-[60] ${NAME_COL_W} ${stickyCellBg} flex items-center gap-4 self-stretch pl-4 pr-2 text-left`}>
+                            <div className={`sticky left-0 z-[60] ${NAME_COL_W} ${stickyCellBg} flex items-center gap-2 self-stretch pl-4 pr-2 text-left`}>
+                                {!readOnly && <div className="w-3.5 shrink-0" />}
                                 {columns.length > 0 && (
                                     <input
                                         type="checkbox"
@@ -411,60 +556,48 @@ export default function WorkflowDetailPage({ params }: Props) {
                                     )}
                                 </div>
                             ) : (
-                                columns.map((col) => {
+                                <DndContext
+                                    sensors={wfSensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleWfDragEnd}
+                                    dropAnimation={null}
+                                >
+                                <SortableContext
+                                    items={columns.map((c) => c.index)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                {columns.map((col) => {
                                     const FormatIcon = formatIcon(col.format ?? "text");
                                     const isChecked = selectedColIndices.includes(col.index);
                                     return (
-                                        <div
+                                        <SortableWorkflowRow
                                             key={col.index}
-                                            onClick={() => readOnly ? setViewingColumn(col) : setEditingColumn(col)}
-                                            className="group flex items-center h-10 pr-8 border-b border-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
-                                        >
-                                            <div className={`sticky left-0 z-[60] ${NAME_COL_W} py-2 pl-4 pr-2 ${isChecked ? "bg-gray-50" : stickyCellBg} transition-colors group-hover:bg-gray-100`}>
-                                                <div className="flex min-w-0 items-center gap-4">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        onChange={() => setSelectedColIndices((prev) => prev.includes(col.index) ? prev.filter((i) => i !== col.index) : [...prev, col.index])}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="h-2.5 w-2.5 shrink-0 rounded border-gray-200 cursor-pointer accent-black"
-                                                    />
-                                                    <span className="min-w-0 flex-1 truncate text-sm text-gray-800">
-                                                        {col.name}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="ml-auto w-36 shrink-0">
-                                                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600">
-                                                    <FormatIcon className="h-3.5 w-3.5 text-gray-400" />
-                                                    {formatLabel(col.format ?? "text")}
-                                                </span>
-                                            </div>
-                                            <div className="flex-1 min-w-0 pr-4">
-                                                <span className="text-xs text-gray-500 truncate block">
-                                                    {col.prompt}
-                                                </span>
-                                            </div>
-                                            {!readOnly && (
-                                                <div className="w-8 shrink-0 flex justify-end">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const next = columns
-                                                                .filter((c) => c.index !== col.index)
-                                                                .map((c, i) => ({ ...c, index: i }));
-                                                            setColumns(next);
-                                                            saveColumns(next);
-                                                        }}
-                                                        className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <X className="h-3.5 w-3.5" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+                                            col={col}
+                                            isChecked={isChecked}
+                                            readOnly={readOnly}
+                                            stickyCellBg={stickyCellBg}
+                                            FormatIcon={FormatIcon}
+                                            onRowClick={() => readOnly ? setViewingColumn(col) : setEditingColumn(col)}
+                                            onCheckChange={() =>
+                                                setSelectedColIndices((prev) =>
+                                                    prev.includes(col.index)
+                                                        ? prev.filter((i) => i !== col.index)
+                                                        : [...prev, col.index]
+                                                )
+                                            }
+                                            onDelete={(e) => {
+                                                e.stopPropagation();
+                                                const next = columns
+                                                    .filter((c) => c.index !== col.index)
+                                                    .map((c, i) => ({ ...c, index: i }));
+                                                setColumns(next);
+                                                saveColumns(next);
+                                            }}
+                                        />
                                     );
-                                })
+                                })}
+                                </SortableContext>
+                                </DndContext>
                             )}
                         </div>
                         </div>

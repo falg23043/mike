@@ -2,7 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Plus, X } from "lucide-react";
+import { ChevronDown, GripVertical, Plus, X } from "lucide-react";
+import {
+    DndContext,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    arrayMove,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { ColumnConfig, ColumnFormat } from "../shared/types";
 import { generateTabularColumnPrompt } from "@/app/lib/mikeApi";
 import { FORMAT_OPTIONS, formatLabel, formatIcon } from "./columnFormat";
@@ -42,6 +57,52 @@ interface Props {
     onDelete?: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Sortable wrapper for draft column cards in AddColumnModal
+// ---------------------------------------------------------------------------
+function SortableDraftCard({
+    id,
+    children,
+}: {
+    id: number;
+    children: React.ReactNode;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            className="flex items-start gap-2"
+        >
+            <button
+                type="button"
+                className="mt-3 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 transition-colors shrink-0 touch-none"
+                {...listeners}
+                tabIndex={-1}
+                aria-label="Drag to reorder column"
+            >
+                <GripVertical className="h-3.5 w-3.5" />
+            </button>
+            <div className="flex-1 min-w-0">{children}</div>
+        </div>
+    );
+}
+
 export function AddColumnModal({ open, existingCount, onClose, onAdd, editingColumn, onSave, onDelete }: Props) {
     const isEditing = !!editingColumn;
     const [columns, setColumns] = useState<ColumnDraft[]>([{ ...EMPTY_DRAFT }]);
@@ -50,6 +111,18 @@ export function AddColumnModal({ open, existingCount, onClose, onAdd, editingCol
         null,
     );
     const presetsRef = useRef<HTMLDivElement>(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    );
+
+    function handleColumnDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+        const oldIndex = active.id as number;
+        const newIndex = over.id as number;
+        setColumns((prev) => arrayMove(prev, oldIndex, newIndex));
+    }
 
     useEffect(() => {
         if (!open) return;
@@ -214,9 +287,18 @@ export function AddColumnModal({ open, existingCount, onClose, onAdd, editingCol
                 >
                     {/* Body */}
                     <div className="px-6 pt-3 pb-5 space-y-5 overflow-y-auto flex-1">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleColumnDragEnd}
+                        >
+                            <SortableContext
+                                items={columns.map((_, i) => i)}
+                                strategy={verticalListSortingStrategy}
+                            >
                         {columns.map((column, index) => (
+                            <SortableDraftCard key={index} id={index}>
                             <div
-                                key={index}
                                 className="rounded-xl border border-gray-200 p-4"
                             >
                                 {/* Name row */}
@@ -468,7 +550,10 @@ export function AddColumnModal({ open, existingCount, onClose, onAdd, editingCol
                                     className="mt-2 w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:border-gray-400 focus:outline-none bg-transparent resize-none leading-relaxed"
                                 />
                             </div>
+                            </SortableDraftCard>
                         ))}
+                            </SortableContext>
+                        </DndContext>
 
                         {!isEditing && (
                             <button
