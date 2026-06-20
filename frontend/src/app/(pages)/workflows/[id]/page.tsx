@@ -560,7 +560,6 @@ export default function WorkflowDetailPage({ params }: Props) {
                                     sensors={wfSensors}
                                     collisionDetection={closestCenter}
                                     onDragEnd={handleWfDragEnd}
-                                    dropAnimation={null}
                                 >
                                 <SortableContext
                                     items={columns.map((c) => c.index)}

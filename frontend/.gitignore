@@ -1,0 +1,4 @@
+
+# Cloudflare / OpenNext build artifacts
+.wrangler/
+.open-next/
