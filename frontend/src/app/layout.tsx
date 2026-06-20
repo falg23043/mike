@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, EB_Garamond } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
@@ -14,41 +15,26 @@ const ebGaramond = EB_Garamond({
     weight: ["400", "500", "600", "700"],
 });
 
+const commutersSans = localFont({
+    src: "../../public/fonts/CommutersSans-SemiBold.otf",
+    variable: "--font-commuters",
+    weight: "600",
+    display: "swap",
+});
+
 export const metadata: Metadata = {
-    metadataBase: new URL("https://app.mikeoss.com"),
-    title: "Mike - AI Legal Platform",
+    title: "Leviat Legal",
     description:
         "AI-powered legal document analysis and contract review platform.",
     icons: {
         icon: [
-            { url: "/icon.svg", type: "image/svg+xml" },
+            { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+            { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
             { url: "/favicon.ico" },
         ],
         apple: "/apple-touch-icon.png",
     },
-    openGraph: {
-        type: "website",
-        url: "https://app.mikeoss.com",
-        siteName: "Mike",
-        title: "Mike - AI Legal Platform",
-        description:
-            "AI-powered legal document analysis and contract review platform.",
-        images: [
-            {
-                url: "/link-image.jpg",
-                width: 1200,
-                height: 651,
-                alt: "Mike",
-            },
-        ],
-    },
-    twitter: {
-        card: "summary_large_image",
-        title: "Mike - AI Legal Platform",
-        description:
-            "AI-powered legal document analysis and contract review platform.",
-        images: ["/link-image.jpg"],
-    },
+    manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
@@ -59,7 +45,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body
-                className={`${inter.variable} ${ebGaramond.variable} font-sans antialiased`}
+                className={`${inter.variable} ${ebGaramond.variable} ${commutersSans.variable} font-sans antialiased`}
             >
                 <Providers>{children}</Providers>
             </body>

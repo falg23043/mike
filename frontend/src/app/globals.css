@@ -8,6 +8,7 @@
     --color-foreground: var(--foreground);
     --font-sans: var(--font-inter);
     --font-serif: var(--font-eb-garamond);
+    --font-commuters: var(--font-commuters);
     --color-blue: rgb(0, 136, 255);
     --color-blue-50: rgba(0, 136, 255, 0.05);
     --color-blue-100: rgba(0, 136, 255, 0.1);

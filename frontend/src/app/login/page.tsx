@@ -51,7 +51,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-dvh bg-gray-50/80 flex items-start justify-center px-6 pt-32 md:pt-40 pb-10 relative">
-            <div className="absolute top-4 md:top-8 left-1/2 -translate-x-1/2">
+            <div className="absolute top-14 md:top-20 left-1/2 -translate-x-1/2">
                 <SiteLogo size="lg" asLink />
             </div>
             <div className="w-full max-w-md">

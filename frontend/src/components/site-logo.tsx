@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MikeIcon } from "@/components/chat/mike-icon";
+import Image from "next/image";
 
 interface SiteLogoProps {
     size?: "sm" | "md" | "lg" | "xl";
@@ -20,33 +20,49 @@ export function SiteLogo({
         process.env.NODE_ENV === "production"
             ? "https://mikeoss.com"
             : "http://localhost:3000";
+
     const sizeClasses = {
-        sm: "text-xl",
-        md: "text-2xl",
-        lg: "text-4xl",
-        xl: "text-6xl",
+        sm: "text-lg",
+        md: "text-xl",
+        lg: "text-3xl",
+        xl: "text-5xl",
     };
 
+    // Emblem pixel sizes, tuned to sit visually balanced next to the wordmark.
     const iconSizes = {
-        sm: 20,
-        md: 22,
-        lg: 30,
-        xl: 48,
+        sm: 24,
+        md: 28,
+        lg: 40,
+        xl: 60,
     };
+
+    const px = iconSizes[size];
 
     const logo = (
-        <h1
-            className={`flex items-center gap-1.5 ${sizeClasses[size]} font-light font-serif ${
+        <div
+            className={`flex items-center gap-2.5 ${
                 animate ? "sidebar-fade-in" : ""
             } ${className}`}
         >
             <span
                 className={`inline-flex shrink-0 items-center leading-none ${iconClassName}`}
             >
-                <MikeIcon size={iconSizes[size]} />
+                <Image
+                    src="/brand/leviat-mark.png"
+                    alt="Leviat Legal"
+                    width={px}
+                    height={px}
+                    priority
+                    className="h-auto w-auto"
+                    style={{ height: px, width: "auto" }}
+                />
             </span>
-            <span>Mike</span>
-        </h1>
+            <span
+                className={`font-commuters font-semibold uppercase leading-none tracking-wide text-[#02263f] ${sizeClasses[size]}`}
+            >
+                Leviat Legal
+            </span>
+        </div>
     );
 
     if (asLink) {

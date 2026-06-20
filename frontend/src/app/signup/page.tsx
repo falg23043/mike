@@ -39,6 +39,18 @@ export default function SignupPage() {
         setLoading(true);
         setError(null);
 
+        // Validate required profile fields
+        if (!name.trim()) {
+            setError("Name is required");
+            setLoading(false);
+            return;
+        }
+        if (!organisation.trim()) {
+            setError("Organisation is required");
+            setLoading(false);
+            return;
+        }
+
         // Validate passwords match
         if (password !== confirmPassword) {
             setError("Passwords do not match");
@@ -64,18 +76,16 @@ export default function SignupPage() {
             if (data.session) {
                 const trimmedName = name.trim();
                 const trimmedOrg = organisation.trim();
-                if (trimmedName || trimmedOrg) {
-                    try {
-                        await updateUserProfile({
-                            ...(trimmedName && { displayName: trimmedName }),
-                            ...(trimmedOrg && { organisation: trimmedOrg }),
-                        });
-                    } catch (profileError) {
-                        console.error(
-                            "[signup] failed to persist profile fields",
-                            profileError,
-                        );
-                    }
+                try {
+                    await updateUserProfile({
+                        displayName: trimmedName,
+                        organisation: trimmedOrg,
+                    });
+                } catch (profileError) {
+                    console.error(
+                        "[signup] failed to persist profile fields",
+                        profileError,
+                    );
                 }
             }
             setSuccess(true);
@@ -97,7 +107,7 @@ export default function SignupPage() {
     if (success) {
         return (
             <div className="min-h-dvh bg-gray-50/80 flex items-start justify-center px-6 pt-32 md:pt-40 pb-10 relative">
-                <div className="absolute top-4 md:top-8 left-1/2 -translate-x-1/2">
+                <div className="absolute top-14 md:top-20 left-1/2 -translate-x-1/2">
                     <SiteLogo size="lg" asLink />
                 </div>
                 <div className="w-full max-w-md">
@@ -122,7 +132,7 @@ export default function SignupPage() {
     // Default Signup Form View
     return (
         <div className="min-h-dvh bg-gray-50/80 flex items-start justify-center px-6 pt-32 md:pt-40 pb-10 relative">
-            <div className="absolute top-4 md:top-8 left-1/2 -translate-x-1/2">
+            <div className="absolute top-14 md:top-20 left-1/2 -translate-x-1/2">
                 <SiteLogo size="lg" asLink />
             </div>
             <div className="w-full max-w-md">
@@ -150,10 +160,7 @@ export default function SignupPage() {
                                 htmlFor="name"
                                 className="block text-sm font-medium text-gray-700 mb-2"
                             >
-                                Name{" "}
-                                <span className="text-gray-400 font-normal">
-                                    (optional)
-                                </span>
+                                Name
                             </label>
                             <Input
                                 id="name"
@@ -161,6 +168,7 @@ export default function SignupPage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Your name"
+                                required
                                 className={`w-full ${authInputClassName}`}
                             />
                         </div>
@@ -170,10 +178,7 @@ export default function SignupPage() {
                                 htmlFor="organisation"
                                 className="block text-sm font-medium text-gray-700 mb-2"
                             >
-                                Organisation{" "}
-                                <span className="text-gray-400 font-normal">
-                                    (optional)
-                                </span>
+                                Organisation
                             </label>
                             <Input
                                 id="organisation"
@@ -183,6 +188,7 @@ export default function SignupPage() {
                                     setOrganisation(e.target.value)
                                 }
                                 placeholder="Your organisation"
+                                required
                                 className={`w-full ${authInputClassName}`}
                             />
                         </div>
@@ -257,35 +263,7 @@ export default function SignupPage() {
                             {loading ? "Creating account..." : "Sign up"}
                         </Button>
                     </form>
-
-                    {/* Terms and Privacy */}
-                    <div className="mt-4 text-center text-xs text-gray-500">
-                        By signing up, you agree to our{" "}
-                        <Link
-                            href="https://mikeoss.com/terms"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                        >
-                            Terms of Use
-                        </Link>{" "}
-                        and{" "}
-                        <Link
-                            href="https://mikeoss.com/privacy"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                        >
-                            Privacy Policy
-                        </Link>
-                    </div>
                 </div>
-                <p className="text-center text-xs text-gray-500 leading-relaxed px-2">
-                    Mike hosted on MikeOSS.com is currently a demo service.
-                    Please do not upload, submit, or store sensitive,
-                    confidential, privileged, client, or personally identifiable
-                    documents.
-                </p>
             </div>
         </div>
     );
