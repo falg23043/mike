@@ -22,10 +22,13 @@ import { listProjects } from "@/app/lib/mikeApi";
 import type { Project } from "@/app/components/shared/types";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
+const EXECUTION_NAV_ITEMS = [
     { href: "/assistant", label: "Assistant", icon: MessageSquare },
-    { href: "/projects", label: "Projects", icon: FolderOpen },
     { href: "/tabular-reviews", label: "Tabular Review", icon: Table2 },
+];
+
+const CONFIG_NAV_ITEMS = [
+    { href: "/projects", label: "Projects", icon: FolderOpen },
     { href: "/workflows", label: "Workflows", icon: Library },
 ];
 
@@ -115,7 +118,7 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
 
     const getUserTier = () => {
         if (!profile) return "";
-        return profile.tier || "Free";
+        return profile.organisation || profile.tier || "Free";
     };
 
     if (!user) return null;
@@ -162,7 +165,7 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
             </div>
 
             {/* Nav items */}
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            {[...EXECUTION_NAV_ITEMS, ...CONFIG_NAV_ITEMS].map(({ href, label, icon: Icon }, idx) => {
                 const isActive =
                     href === "/assistant"
                         ? pathname === href
@@ -170,34 +173,42 @@ export function AppSidebar({ isOpen, onToggle }: AppSidebarProps) {
                           ? pathname === href
                           : pathname === href ||
                             pathname.startsWith(href + "/");
+                const isFirstConfig = idx === EXECUTION_NAV_ITEMS.length;
                 return (
-                    <div key={href} className="py-0.5 px-2.5">
-                        <button
-                            onClick={() => router.push(href)}
-                            title={!isOpen ? label : ""}
-                            className={cn(
-                                "w-full h-9 flex items-center gap-3 px-2.5 py-2 rounded-md transition-colors text-left",
-                                isActive
-                                    ? "bg-gray-200/60 text-gray-900"
-                                    : "text-gray-700 hover:bg-gray-100",
-                                !isOpen ? "hidden md:flex" : "flex",
-                            )}
-                        >
-                            <Icon
-                                className={`h-4 w-4 flex-shrink-0 ${
-                                    isActive ? "text-gray-900" : "text-black"
-                                }`}
-                            />
-                            {isOpen && (
-                                <span
-                                    className={`text-sm font-medium ${
-                                        shouldAnimate ? "sidebar-fade-in-2" : ""
+                    <div key={href}>
+                        {isFirstConfig && (
+                            <div className={cn("px-4 pt-2 pb-1", !isOpen ? "hidden md:block" : "")}>
+                                <div className="border-t border-gray-200" />
+                            </div>
+                        )}
+                        <div className="py-0.5 px-2.5">
+                            <button
+                                onClick={() => router.push(href)}
+                                title={!isOpen ? label : ""}
+                                className={cn(
+                                    "w-full h-9 flex items-center gap-3 px-2.5 py-2 rounded-md transition-colors text-left",
+                                    isActive
+                                        ? "bg-gray-200/60 text-gray-900"
+                                        : "text-gray-700 hover:bg-gray-100",
+                                    !isOpen ? "hidden md:flex" : "flex",
+                                )}
+                            >
+                                <Icon
+                                    className={`h-4 w-4 flex-shrink-0 ${
+                                        isActive ? "text-gray-900" : "text-black"
                                     }`}
-                                >
-                                    {label}
-                                </span>
-                            )}
-                        </button>
+                                />
+                                {isOpen && (
+                                    <span
+                                        className={`text-sm font-medium ${
+                                            shouldAnimate ? "sidebar-fade-in-2" : ""
+                                        }`}
+                                    >
+                                        {label}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 );
             })}
