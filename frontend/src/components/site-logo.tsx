@@ -58,7 +58,7 @@ export function SiteLogo({
                 />
             </span>
             <span
-                className={`font-commuters font-semibold uppercase leading-none tracking-wide text-[#02263f] ${sizeClasses[size]}`}
+                className={`font-commuters font-semibold uppercase leading-none tracking-wide text-[#02263f] whitespace-nowrap ${sizeClasses[size]}`}
             >
                 Leviat Legal
             </span>
