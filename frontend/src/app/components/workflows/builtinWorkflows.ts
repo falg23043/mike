@@ -1241,6 +1241,66 @@ export const BUILT_IN_WORKFLOWS: Workflow[] = [
             },
         ],
     },
+    {
+        id: "builtin-agreement-renewal-tracker",
+        user_id: null,
+        is_system: true,
+        created_at: "",
+        title: "Agreement Renewal Tracker",
+        type: "tabular",
+        practice: "Corporate",
+        prompt_md: null,
+        columns_config: [
+            {
+                name: "Customer",
+                index: 0,
+                format: "text",
+                prompt: "Extract the name or identifier of the customer referenced in this document or row. Provide just the full legal name and DBA as applicable, but no address or other detail. The customer is the party receiveing the products or services, and is the party paying.",
+            },
+            {
+                name: "Supplier",
+                index: 1,
+                format: "text",
+                prompt: "Identify and extract the name of the supplier or vendor referenced in this row. Include any alternative names, aliases, or DBA (doing business as) names if present. Dont show the supplier's address, etc. Also double check to make sure you're not confusing the supplier with the customer. The supplier is the one providing products or services.",
+            },
+            {
+                name: "Term",
+                index: 2,
+                format: "text",
+                prompt: "What is the contract term, duration, or length of the agreement? Include any renewal periods, extension options, or termination dates.",
+            },
+            {
+                name: "End date",
+                index: 3,
+                format: "date",
+                prompt: "What is the end date specified in this document or table entry? If the agreement only refers to a term (eg. 2 years after the effective date), then calculate the end date based on available information. If end date information is not available, leave blank. Harmonize the format throughout. Format should be ONLY the date eg. \"01 January 2027\" do NOT provide any additional information or explanation. If there are multiple end dates, provide the first-to-occur end date ONLY.",
+            },
+            {
+                name: "Automatic Renewal",
+                index: 4,
+                format: "yes_no",
+                prompt: "Does this contract contain an automatic renewal clause or provision?",
+            },
+            {
+                name: "Renewal Notice",
+                index: 5,
+                format: "text",
+                prompt: "Extract the renewal notice information, including the notice date, renewal deadline, and any conditions or requirements for renewal.",
+            },
+            {
+                name: "Customer Termination Rights",
+                index: 6,
+                format: "text",
+                prompt: "What are the termination rights of the party receiving products or services under the agreement (i.e., the paying party)? \n\nExtract any provisions that describe termination rights, termination for cause, termination for convenience, notice periods, termination fees, or conditions under which the customer may exit or cancel the agreement.\n\nFormat should be: \"Termination for convenience: [insert]. Termination for cause: [insert].\"\n\nDon't include supplier (provider rendering services) rights to terminate.",
+            },
+            {
+                name: "Customer Signatory",
+                index: 7,
+                format: "text",
+                prompt: "Who is the customer representative authorized to sign this agreement? Identify the full name and title of the individual with signatory authority on behalf of the customer. The customer is the party receiveing the products or services, and is the party paying.",
+            },
+        ],
+    },
 ];
 
 export const BUILT_IN_IDS = new Set(BUILT_IN_WORKFLOWS.map((wf) => wf.id));

@@ -23,7 +23,7 @@ import { DisplayWorkflowModal } from "./DisplayWorkflowModal";
 import { NewWorkflowModal } from "./NewWorkflowModal";
 import { ToolbarTabs } from "../shared/ToolbarTabs";
 import { RowActions } from "../shared/RowActions";
-import { MikeIcon } from "@/components/chat/mike-icon";
+import { Globe } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { PageHeader } from "@/app/components/shared/PageHeader";
 
@@ -536,8 +536,8 @@ export function WorkflowList() {
                                 <div className="w-28 shrink-0">
                                     {wf.is_system ? (
                                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                                            <MikeIcon size={14} />
-                                            Mike
+                                            <Globe className="h-3.5 w-3.5 text-gray-500" />
+                                            Global
                                         </span>
                                     ) : wf.user_id === user?.id ? (
                                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600">
