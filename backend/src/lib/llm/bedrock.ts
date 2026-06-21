@@ -71,6 +71,8 @@ export async function streamBedrock(
 
     const messages: NativeMessage[] = toNativeMessages(params.messages);
     let fullText = "";
+    let inputTokens = 0;
+    let outputTokens = 0;
 
     for (let iter = 0; iter < maxIter; iter++) {
         const stream = bedrock.messages.stream({
@@ -109,6 +111,11 @@ export async function streamBedrock(
 
         const final = await stream.finalMessage();
         if (sawThinking) callbacks.onReasoningBlockEnd?.();
+        const usage = (final as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
+        if (usage) {
+            inputTokens += usage.input_tokens ?? 0;
+            outputTokens += usage.output_tokens ?? 0;
+        }
         const stopReason = final.stop_reason;
         const assistantBlocks = final.content as ContentBlock[];
 
@@ -150,7 +157,7 @@ export async function streamBedrock(
         });
     }
 
-    return { fullText };
+    return { fullText, usage: { inputTokens, outputTokens } };
 }
 
 export async function completeBedrockText(params: {
@@ -158,7 +165,7 @@ export async function completeBedrockText(params: {
     systemPrompt?: string;
     user: string;
     maxTokens?: number;
-}): Promise<string> {
+}): Promise<import("./types").CompleteTextResult> {
     const bedrock = client();
     const bedrockModelId = resolveBedrockModelId(params.model);
     const resp = await bedrock.messages.create({
@@ -171,7 +178,14 @@ export async function completeBedrockText(params: {
         .filter((b): b is Anthropic.TextBlock => b.type === "text")
         .map((b) => b.text)
         .join("");
-    return text;
+    const usage = (resp as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
+    return {
+        text,
+        usage: {
+            inputTokens: usage?.input_tokens ?? 0,
+            outputTokens: usage?.output_tokens ?? 0,
+        },
+    };
 }
 
 export type { NormalizedToolResult };

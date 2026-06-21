@@ -325,7 +325,7 @@ export async function streamOpenAI(
         }));
     }
 
-    return { fullText };
+    return { fullText, usage: { inputTokens: 0, outputTokens: 0 } };
 }
 
 export async function completeOpenAIText(params: {

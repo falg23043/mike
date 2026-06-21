@@ -60,6 +60,17 @@ export type StreamChatParams = {
     abortSignal?: AbortSignal;
 };
 
+export type TokenUsage = {
+    inputTokens: number;
+    outputTokens: number;
+};
+
 export type StreamChatResult = {
     fullText: string;
+    usage: TokenUsage;
+};
+
+export type CompleteTextResult = {
+    text: string;
+    usage: TokenUsage;
 };

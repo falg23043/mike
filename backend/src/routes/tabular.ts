@@ -326,6 +326,7 @@ tabularRouter.post("/prompt", requireAuth, async (req, res) => {
             user: userMessage,
             maxTokens: 512,
             apiKeys: api_keys,
+            usageContext: { userId, feature: "tabular" },
         });
         const parsed = JSON.parse(
             raw
@@ -847,6 +848,7 @@ tabularRouter.post(
             column.format,
             column.tags,
             api_keys,
+            userId,
         );
 
         if (!result) {
@@ -1037,6 +1039,7 @@ tabularRouter.post("/:reviewId/generate", requireAuth, async (req, res) => {
                             );
                         },
                         api_keys,
+                        userId,
                     );
                 } catch (err) {
                     console.error(
@@ -1475,6 +1478,7 @@ tabularRouter.post("/:reviewId/chat", requireAuth, async (req, res) => {
                     projectName: clientProjectName ?? null,
                 },
                 api_keys,
+                userId,
             );
             if (title) {
                 await db
@@ -1612,6 +1616,7 @@ async function queryTabularCell(
     format?: string,
     tags?: string[],
     apiKeys?: import("../lib/llm").UserApiKeys,
+    userId?: string,
 ) {
     const suffix = formatPromptSuffix(format as never, tags);
     const fullPrompt = `${columnPrompt}${suffix} If not found, state "Not Found". Leave all reasoning and explanation in the "reasoning" field only.`;
@@ -1631,6 +1636,7 @@ The "summary" field must contain only the extracted value with inline citations 
             user: `Document: ${filename}\n\n${documentText.slice(0, 120_000)}\n\n---\nInstruction: ${fullPrompt}`,
             maxTokens: 2048,
             apiKeys,
+            usageContext: userId ? { userId, feature: "tabular" } : undefined,
         });
     } catch (err) {
         console.error("[queryTabularCell] completion failed", safeErrorLog(err));
@@ -1675,6 +1681,7 @@ async function generateChatTitle(
     firstUserMessage: string,
     context?: { reviewTitle?: string | null; projectName?: string | null },
     apiKeys?: import("../lib/llm").UserApiKeys,
+    userId?: string,
 ): Promise<string | null> {
     try {
         const contextLines: string[] = [];
@@ -1691,6 +1698,7 @@ async function generateChatTitle(
             user: `${contextBlock}Generate a short title (4-6 words) for a chat that starts with the message below. The title should reflect the user's specific question, not the review or project name. Return only the title, no punctuation, no quotes:\n\n${firstUserMessage}`,
             maxTokens: 64,
             apiKeys,
+            usageContext: userId ? { userId, feature: "title" } : undefined,
         });
         return raw.trim().slice(0, 80) || null;
     } catch {
@@ -1766,6 +1774,7 @@ async function queryTabularAllColumns(
     columns: Column[],
     onResult: (columnIndex: number, result: CellResult) => Promise<void>,
     apiKeys?: import("../lib/llm").UserApiKeys,
+    userId?: string,
 ): Promise<void> {
     const columnsDesc = columns
         .map((col) => {
@@ -1828,6 +1837,7 @@ Rules:
             messages: [{ role: "user", content: USER }],
             tools: [],
             apiKeys,
+            usageContext: userId ? { userId, feature: "tabular" } : undefined,
             callbacks: {
                 onContentDelta: (delta) => {
                     contentBuffer += delta;

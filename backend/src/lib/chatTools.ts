@@ -4017,6 +4017,7 @@ export async function runLLMStream(params: {
       apiKeys,
       enableThinking: true,
       abortSignal: signal,
+      usageContext: { userId, feature: "chat" },
       callbacks: {
         onContentDelta: (delta) => {
           iterText += delta;

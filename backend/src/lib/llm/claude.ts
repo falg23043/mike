@@ -242,7 +242,7 @@ export async function streamClaude(
         });
     }
 
-    return { fullText };
+    return { fullText, usage: { inputTokens: 0, outputTokens: 0 } };
 }
 
 export async function completeClaudeText(params: {

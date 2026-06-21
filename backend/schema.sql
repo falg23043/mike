@@ -424,3 +424,29 @@ revoke all on public.tabular_review_chat_messages from anon, authenticated;
 revoke all on public.user_api_keys from anon, authenticated;
 revoke all on public.courtlistener_citation_index from anon, authenticated;
 revoke all on public.courtlistener_opinion_cluster_index from anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Token usage + cost tracking (migration 002)
+-- ---------------------------------------------------------------------------
+create table if not exists public.token_usage (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  model text not null,
+  provider text not null default 'unknown',
+  input_tokens integer not null default 0,
+  output_tokens integer not null default 0,
+  input_cost numeric(12, 6) not null default 0,
+  output_cost numeric(12, 6) not null default 0,
+  total_cost numeric(12, 6) not null default 0,
+  used_own_key boolean not null default false,
+  feature text not null default 'unknown',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists token_usage_user_created_idx
+  on public.token_usage (user_id, created_at);
+create index if not exists token_usage_created_idx
+  on public.token_usage (created_at);
+
+alter table public.token_usage enable row level security;
+revoke all on public.token_usage from anon, authenticated;

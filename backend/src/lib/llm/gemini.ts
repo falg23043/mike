@@ -167,6 +167,8 @@ export async function streamGemini(
 
     const contents: GeminiContent[] = toNativeContents(params.messages);
     let fullText = "";
+    let inputTokens = 0;
+    let outputTokens = 0;
 
     for (let iter = 0; iter < maxIter; iter++) {
         throwIfAborted(params.abortSignal);
@@ -198,6 +200,11 @@ export async function streamGemini(
         const callParts: GeminiPart[] = [];
         const toolCalls: NormalizedToolCall[] = [];
         let sawThinking = false;
+        // usageMetadata is cumulative within a single streamed call and repeats
+        // across chunks; capture the latest seen value for THIS iteration and
+        // add it once after the stream completes.
+        let iterInputTokens = 0;
+        let iterOutputTokens = 0;
         const iterator = stream[Symbol.asyncIterator]();
         let rejectAbort: ((reason?: unknown) => void) | null = null;
         const abortPromise = new Promise<never>((_, reject) => {
@@ -225,6 +232,22 @@ export async function streamGemini(
                 });
                 const failureMessage = geminiStreamFailureMessage(chunk);
                 if (failureMessage) throw new Error(failureMessage);
+
+                // usageMetadata appears on chunks (cumulative for this call);
+                // keep the latest seen value, add once after the loop.
+                const um = (chunk as {
+                    usageMetadata?: {
+                        promptTokenCount?: number;
+                        candidatesTokenCount?: number;
+                        thoughtsTokenCount?: number;
+                    };
+                }).usageMetadata;
+                if (um) {
+                    iterInputTokens = um.promptTokenCount ?? iterInputTokens;
+                    iterOutputTokens =
+                        (um.candidatesTokenCount ?? 0) +
+                        (um.thoughtsTokenCount ?? 0) || iterOutputTokens;
+                }
 
                 const parts =
                     (chunk as { candidates?: { content?: { parts?: GeminiPart[] } }[] })
@@ -267,6 +290,8 @@ export async function streamGemini(
         if (sawThinking) callbacks.onReasoningBlockEnd?.();
         throwIfAborted(params.abortSignal);
 
+        inputTokens += iterInputTokens;
+        outputTokens += iterOutputTokens;
         fullText += textParts.join("");
 
         if (!toolCalls.length || !runTools) {
@@ -300,7 +325,7 @@ export async function streamGemini(
         });
     }
 
-    return { fullText };
+    return { fullText, usage: { inputTokens, outputTokens } };
 }
 
 export async function completeGeminiText(params: {
@@ -308,7 +333,7 @@ export async function completeGeminiText(params: {
     systemPrompt?: string;
     user: string;
     apiKeys?: { gemini?: string | null };
-}): Promise<string> {
+}): Promise<import("./types").CompleteTextResult> {
     const ai = client(params.apiKeys?.gemini);
     let resp: Awaited<ReturnType<typeof ai.models.generateContent>>;
     try {
@@ -322,5 +347,19 @@ export async function completeGeminiText(params: {
     } catch (error) {
         throw new Error(geminiErrorMessage(error));
     }
-    return resp.text ?? "";
+    const um = (resp as {
+        usageMetadata?: {
+            promptTokenCount?: number;
+            candidatesTokenCount?: number;
+            thoughtsTokenCount?: number;
+        };
+    }).usageMetadata;
+    return {
+        text: resp.text ?? "",
+        usage: {
+            inputTokens: um?.promptTokenCount ?? 0,
+            outputTokens:
+                (um?.candidatesTokenCount ?? 0) + (um?.thoughtsTokenCount ?? 0),
+        },
+    };
 }

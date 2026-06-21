@@ -13,7 +13,7 @@ import {
     needsMfaVerification,
 } from "@/app/components/shared/MfaVerificationPopup";
 import { WarningPopup } from "@/app/components/shared/WarningPopup";
-import { deleteAccount, isMfaRequiredError } from "@/app/lib/mikeApi";
+import { deleteAccount, isMfaRequiredError, getMyUsage, type MonthlyUsage } from "@/app/lib/mikeApi";
 import {
     accountGlassDangerOutlineButtonClassName,
     accountGlassInputClassName,
@@ -45,6 +45,21 @@ export default function AccountPage() {
     const [deleteConfirm, setDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [accountDeleteMfaOpen, setAccountDeleteMfaOpen] = useState(false);
+    const [usage, setUsage] = useState<MonthlyUsage | null>(null);
+
+    useEffect(() => {
+        let active = true;
+        getMyUsage()
+            .then((u) => {
+                if (active) setUsage(u);
+            })
+            .catch(() => {
+                /* non-critical — counter just stays hidden */
+            });
+        return () => {
+            active = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (profile?.displayName) {
@@ -168,6 +183,28 @@ export default function AccountPage() {
 
     return (
         <div className="space-y-8">
+            {/* Monthly usage */}
+            <section className="space-y-3">
+                <h2 className="text-2xl font-medium font-serif text-gray-900">
+                    Usage
+                </h2>
+                <div className={`${accountGlassSectionClassName} p-4`}>
+                    <div className="flex items-baseline justify-between">
+                        <span className="text-sm text-gray-600">
+                            This month
+                        </span>
+                        <span className="text-2xl font-medium text-gray-900 tabular-nums">
+                            {usage
+                                ? `$${usage.total_cost.toFixed(2)}`
+                                : "—"}
+                        </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                        Resets on the 1st of each month.
+                    </p>
+                </div>
+            </section>
+
             {/* Profile Settings */}
             <section className="space-y-3">
                 <h2 className="text-2xl font-medium font-serif text-gray-900">

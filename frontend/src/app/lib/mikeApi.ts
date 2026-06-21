@@ -229,6 +229,17 @@ export async function getUserProfile(): Promise<UserProfile> {
     return apiRequest<UserProfile>("/user/profile");
 }
 
+export type MonthlyUsage = {
+    month: string; // YYYY-MM
+    total_cost: number;
+    input_tokens: number;
+    output_tokens: number;
+};
+
+export async function getMyUsage(): Promise<MonthlyUsage> {
+    return apiRequest<MonthlyUsage>("/usage/me");
+}
+
 export async function updateUserProfile(payload: {
     displayName?: string | null;
     organisation?: string | null;
