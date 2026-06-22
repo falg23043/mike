@@ -93,10 +93,14 @@ export default function SignupPage() {
                 router.push("/assistant");
             }, 2000);
         } catch (error: unknown) {
+            const rawMessage = error instanceof Error ? error.message : "";
+            const isUnauthorizedDomain =
+                rawMessage.toLowerCase().includes("database error saving new user") ||
+                rawMessage.toLowerCase().includes("unauthorized");
             setError(
-                error instanceof Error
-                    ? error.message
-                    : "An error occurred during signup",
+                isUnauthorizedDomain
+                    ? "Unauthorized email, please contact Leviat Legal"
+                    : rawMessage || "An error occurred during signup",
             );
         } finally {
             setLoading(false);
