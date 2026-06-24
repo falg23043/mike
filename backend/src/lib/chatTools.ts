@@ -3832,6 +3832,15 @@ export async function runLLMStream(params: {
   write: (s: string) => void;
   extraTools?: unknown[];
   includeResearchTools?: boolean;
+  /**
+   * Which built-in base tools to expose.
+   * - "full" (default): document tools (read_document, edit_document, …),
+   *   research tools (if enabled) and workflow tools.
+   * - "none": expose no base tools — only what the caller passes in
+   *   extraTools. Used by the tabular chat (cells-only) so the model can
+   *   never reach for document tools whose stores aren't wired up here.
+   */
+  baseToolset?: "full" | "none";
   workflowStore?: WorkflowStore;
   tabularStore?: TabularCellStore;
   buildCitations?: (fullText: string) => unknown[];
@@ -3858,6 +3867,7 @@ export async function runLLMStream(params: {
     write,
     extraTools,
     includeResearchTools = true,
+    baseToolset = "full",
     workflowStore,
     tabularStore,
     buildCitations,
@@ -3867,10 +3877,26 @@ export async function runLLMStream(params: {
     projectId,
   } = params;
   const researchTools = includeResearchTools ? COURTLISTENER_TOOLS : [];
-  const baseTools = [...TOOLS, ...researchTools, ...WORKFLOW_TOOLS];
-  const activeTools = extraTools?.length
+  const baseTools =
+    baseToolset === "none"
+      ? []
+      : [...TOOLS, ...researchTools, ...WORKFLOW_TOOLS];
+  const combinedTools = extraTools?.length
     ? [...baseTools, ...extraTools]
     : baseTools;
+  // Defense-in-depth: the Bedrock/Claude (and Gemini) tools APIs reject a
+  // tools array containing two declarations with the same name with a hard
+  // 400 ("Tool names must be unique."), which silently kills the stream.
+  // Dedupe by function name so a caller accidentally re-adding a base tool
+  // (e.g. WORKFLOW_TOOLS) can never take the whole request down.
+  const seenToolNames = new Set<string>();
+  const activeTools = combinedTools.filter((tool) => {
+    const name = (tool as { function?: { name?: string } })?.function?.name;
+    if (typeof name !== "string") return true;
+    if (seenToolNames.has(name)) return false;
+    seenToolNames.add(name);
+    return true;
+  });
 
   // Extract system prompt; pass remaining turns to the adapter as
   // plain user/assistant messages.

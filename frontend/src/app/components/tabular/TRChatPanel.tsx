@@ -1730,6 +1730,52 @@ export function TRChatPanel({
                             continue;
                         }
 
+                        if (data.type === "error") {
+                            // Backend surfaced a stream error (e.g. a provider
+                            // 400). Render it as a visible message and stop the
+                            // spinner instead of hanging forever.
+                            stopDrip();
+                            clearStreamingPlaceholders();
+                            const errMessage =
+                                typeof data.message === "string" &&
+                                data.message.trim()
+                                    ? data.message
+                                    : "An error occurred. Please try again.";
+                            setMessages((prev) => {
+                                const updated = [...prev];
+                                const last = updated[updated.length - 1];
+                                if (last?.role === "assistant") {
+                                    const hasContent = (
+                                        last.events ?? []
+                                    ).some(
+                                        (e) =>
+                                            e.type === "content" &&
+                                            (
+                                                e as {
+                                                    type: "content";
+                                                    text: string;
+                                                }
+                                            ).text,
+                                    );
+                                    updated[updated.length - 1] = {
+                                        ...last,
+                                        isStreaming: false,
+                                        events: hasContent
+                                            ? last.events
+                                            : [
+                                                  ...(last.events ?? []),
+                                                  {
+                                                      type: "content" as const,
+                                                      text: errMessage,
+                                                  },
+                                              ],
+                                    };
+                                }
+                                return updated;
+                            });
+                            continue;
+                        }
+
                         if (data.type === "citations") {
                             // End-of-stream signal — scrub any lingering
                             // placeholders so they don't persist into the

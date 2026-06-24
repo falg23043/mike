@@ -1260,7 +1260,7 @@ Rules:
 - Answer in clear, concise prose. You may use markdown formatting.
 
 WORKFLOWS:
-A workflow is a saved analysis template. Only apply a workflow when the user's message is explicitly tagged with a [Workflow: <title> (id: <id>)] marker at the start. When you see that marker, call read_workflow with the given id to load its instructions, then follow them over this review's cells (reading the cells and, if the workflow requires it, the source documents you need). Never invoke or apply a workflow that has not been explicitly selected via that marker, and do not call list_workflows on your own — workflow selection is driven entirely by the user through the interface. Be efficient with your tool budget: load the selected workflow first, then read only what you need before writing your answer.`;
+A workflow is a saved analysis template. Only apply a workflow when the user's message is explicitly tagged with a [Workflow: <title> (id: <id>)] marker at the start. When you see that marker, call read_workflow with the given id to load its instructions, then follow them over this review's extracted cells (use read_table_cells to read the cells you need). You do not have access to the underlying source documents here — work only from the extracted cell content. Never invoke or apply a workflow that has not been explicitly selected via that marker, and do not call list_workflows on your own — workflow selection is driven entirely by the user through the interface. Be efficient with your tool budget: load the selected workflow first, then read only the cells you need before writing your answer.`;
 
     const formatted: unknown[] = [{ role: "system", content: systemContent }];
     for (const msg of messages) {
@@ -1453,6 +1453,7 @@ tabularRouter.post("/:reviewId/chat", requireAuth, async (req, res) => {
             write,
             extraTools: [...TABULAR_TOOLS, ...WORKFLOW_TOOLS],
             includeResearchTools: false,
+            baseToolset: "none",
             tabularStore,
             workflowStore,
             buildCitations: (text) =>
