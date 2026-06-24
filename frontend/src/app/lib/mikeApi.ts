@@ -859,7 +859,11 @@ export async function streamTabularGeneration(
 
 export async function streamTabularChat(
     reviewId: string,
-    messages: { role: string; content: string }[],
+    messages: {
+        role: string;
+        content: string;
+        workflow?: { id: string; title: string };
+    }[],
     chat_id?: string | null,
     signal?: AbortSignal,
     context?: { reviewTitle?: string | null; projectName?: string | null },

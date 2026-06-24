@@ -12,6 +12,8 @@ import {
     ChevronDown,
     ChevronLeft,
     Trash2,
+    Workflow as WorkflowIcon,
+    X,
 } from "lucide-react";
 import { MikeIcon } from "@/components/chat/mike-icon";
 import {
@@ -24,6 +26,8 @@ import {
     type TRCitationAnnotation,
 } from "@/app/lib/mikeApi";
 import type { AssistantEvent, ColumnConfig, Document } from "../shared/types";
+import type { Workflow } from "../shared/types";
+import { AssistantWorkflowModal } from "../assistant/AssistantWorkflowModal";
 import { ModelToggle } from "../assistant/ModelToggle";
 import { ApiKeyMissingModal } from "../shared/ApiKeyMissingModal";
 import { PreResponseWrapper } from "../shared/PreResponseWrapper";
@@ -567,16 +571,23 @@ function TRChatInput({
     onModelChange,
     apiKeys,
     onHeightChange,
+    projectName,
 }: {
     isLoading: boolean;
-    onSubmit: (value: string) => void;
+    onSubmit: (value: string, workflow?: { id: string; title: string }) => void;
     onCancel: () => void;
     model: string;
     onModelChange: (id: string) => void;
     apiKeys?: ApiKeyState;
     onHeightChange: (height: number) => void;
+    projectName?: string | null;
 }) {
     const [value, setValue] = useState("");
+    const [selectedWorkflow, setSelectedWorkflow] = useState<{
+        id: string;
+        title: string;
+    } | null>(null);
+    const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -619,7 +630,9 @@ function TRChatInput({
         if (!trimmed) return;
         setValue("");
         resetTextarea();
-        onSubmit(trimmed);
+        const wf = selectedWorkflow;
+        setSelectedWorkflow(null);
+        onSubmit(trimmed, wf ?? undefined);
     }
 
     return (
@@ -653,12 +666,44 @@ function TRChatInput({
                     }}
                     className="w-full resize-none text-sm bg-transparent outline-none placeholder:text-gray-400 leading-6 max-h-48 overflow-hidden border-0 p-0 pl-3 pr-2 pt-0.5"
                 />
+                {selectedWorkflow && (
+                    <div className="px-3">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-xs text-neutral-700">
+                            <WorkflowIcon className="h-3 w-3" />
+                            {selectedWorkflow.title}
+                            <button
+                                type="button"
+                                onClick={() => setSelectedWorkflow(null)}
+                                aria-label="Remove workflow"
+                                className="ml-0.5 text-neutral-400 hover:text-neutral-700"
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        </span>
+                    </div>
+                )}
                 <div className="flex items-center justify-between pl-1 pr-2">
-                    <ModelToggle
-                        value={model}
-                        onChange={onModelChange}
-                        apiKeys={apiKeys}
-                    />
+                    <div className="flex items-center gap-1">
+                        <ModelToggle
+                            value={model}
+                            onChange={onModelChange}
+                            apiKeys={apiKeys}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setWorkflowModalOpen(true)}
+                            aria-label="Open workflows"
+                            className={cn(
+                                "flex items-center gap-1 rounded-[10px] h-7 px-2 text-xs font-medium border transition-colors",
+                                selectedWorkflow
+                                    ? "border-neutral-300 bg-neutral-100 text-neutral-800"
+                                    : "border-transparent text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100",
+                            )}
+                        >
+                            <WorkflowIcon className="h-3.5 w-3.5" />
+                            Workflows
+                        </button>
+                    </div>
                     <button
                         type="button"
                         onClick={handleAction}
@@ -680,6 +725,15 @@ function TRChatInput({
                     </button>
                 </div>
             </div>
+            <AssistantWorkflowModal
+                open={workflowModalOpen}
+                onClose={() => setWorkflowModalOpen(false)}
+                onSelect={(wf: Workflow) => {
+                    setSelectedWorkflow({ id: wf.id, title: wf.title });
+                    setWorkflowModalOpen(false);
+                }}
+                projectName={projectName ?? undefined}
+            />
         </div>
     );
 }
@@ -1119,7 +1173,10 @@ export function TRChatPanel({
         abortRef.current?.abort();
     }
 
-    async function handleSubmit(trimmed: string) {
+    async function handleSubmit(
+        trimmed: string,
+        workflow?: { id: string; title: string },
+    ) {
         if (!trimmed || isLoading) return;
         if (apiKeys && !isModelAvailable(currentModel, apiKeys)) {
             setApiKeyModalProvider(getModelProvider(currentModel));
@@ -1133,7 +1190,10 @@ export function TRChatPanel({
                 content: m.content,
             }),
         );
-        const allMessages = [...history, { role: "user", content: trimmed }];
+        const allMessages = [
+            ...history,
+            { role: "user", content: trimmed, workflow },
+        ];
 
         const userMsg: TRMessage = { role: "user", content: trimmed };
         const assistantMsg: TRMessage = {
@@ -1915,6 +1975,7 @@ export function TRChatPanel({
                 }
                 apiKeys={apiKeys}
                 onHeightChange={setInputHeight}
+                projectName={projectName}
             />
 
             <ApiKeyMissingModal

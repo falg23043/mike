@@ -10,10 +10,12 @@ import { normalizeDocxZipPaths } from "../lib/convert";
 import {
     AssistantStreamError,
     buildCancelledAssistantMessage,
+    buildWorkflowStore,
     isAbortError,
     runLLMStream,
     stripTransientAssistantEvents,
     TABULAR_TOOLS,
+    WORKFLOW_TOOLS,
     type ChatMessage,
     type TabularCellStore,
 } from "../lib/chatTools";
@@ -1255,11 +1257,18 @@ Rules:
 - quote should be verbatim text from the cell's summary
 - Omit <CITATIONS> if you make no citations
 - Do not fabricate cell content
-- Answer in clear, concise prose. You may use markdown formatting.`;
+- Answer in clear, concise prose. You may use markdown formatting.
+
+WORKFLOWS:
+A workflow is a saved analysis template. Only apply a workflow when the user's message is explicitly tagged with a [Workflow: <title> (id: <id>)] marker at the start. When you see that marker, call read_workflow with the given id to load its instructions, then follow them over this review's cells (reading the cells and, if the workflow requires it, the source documents you need). Never invoke or apply a workflow that has not been explicitly selected via that marker, and do not call list_workflows on your own — workflow selection is driven entirely by the user through the interface. Be efficient with your tool budget: load the selected workflow first, then read only what you need before writing your answer.`;
 
     const formatted: unknown[] = [{ role: "system", content: systemContent }];
     for (const msg of messages) {
-        formatted.push({ role: msg.role, content: msg.content ?? "" });
+        let content = msg.content ?? "";
+        if (msg.role === "user" && msg.workflow) {
+            content = `[Workflow: ${msg.workflow.title} (id: ${msg.workflow.id})]\n\n${content}`;
+        }
+        formatted.push({ role: msg.role, content });
     }
     return formatted;
 }
@@ -1434,6 +1443,7 @@ tabularRouter.post("/:reviewId/chat", requireAuth, async (req, res) => {
     }
 
     try {
+        const workflowStore = await buildWorkflowStore(userId, userEmail, db);
         const { fullText, events } = await runLLMStream({
             apiMessages,
             docStore: new Map(),
@@ -1441,9 +1451,10 @@ tabularRouter.post("/:reviewId/chat", requireAuth, async (req, res) => {
             userId,
             db,
             write,
-            extraTools: TABULAR_TOOLS,
+            extraTools: [...TABULAR_TOOLS, ...WORKFLOW_TOOLS],
             includeResearchTools: false,
             tabularStore,
+            workflowStore,
             buildCitations: (text) =>
                 extractTabularAnnotations(text, tabularStore),
             model: tabular_model,
