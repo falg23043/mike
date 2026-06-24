@@ -19,7 +19,7 @@
 // ---------------------------------------------------------------------------
 
 /** Markup applied on top of public list prices. */
-export const BILLING_MULTIPLIER = 4;
+export const BILLING_MULTIPLIER = 6;
 
 type Rate = { input: number; output: number }; // USD per 1M tokens (list)
 
