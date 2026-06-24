@@ -12,7 +12,8 @@ import {
     ChevronDown,
     ChevronLeft,
     Trash2,
-    Workflow as WorkflowIcon,
+    Library,
+    Check,
     X,
 } from "lucide-react";
 import { MikeIcon } from "@/components/chat/mike-icon";
@@ -669,7 +670,7 @@ function TRChatInput({
                 {selectedWorkflow && (
                     <div className="px-3">
                         <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 border border-neutral-200 px-2 py-0.5 text-xs text-neutral-700">
-                            <WorkflowIcon className="h-3 w-3" />
+                            <Library className="h-3 w-3" />
                             {selectedWorkflow.title}
                             <button
                                 type="button"
@@ -694,13 +695,17 @@ function TRChatInput({
                             onClick={() => setWorkflowModalOpen(true)}
                             aria-label="Open workflows"
                             className={cn(
-                                "flex items-center gap-1 rounded-[10px] h-7 px-2 text-xs font-medium border transition-colors",
+                                "flex items-center gap-1.5 rounded-lg px-2 h-8 text-sm transition-colors",
                                 selectedWorkflow
-                                    ? "border-neutral-300 bg-neutral-100 text-neutral-800"
-                                    : "border-transparent text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100",
+                                    ? "text-blue-600 hover:bg-white/55"
+                                    : "text-gray-400 hover:bg-white/55 hover:text-gray-700",
                             )}
                         >
-                            <WorkflowIcon className="h-3.5 w-3.5" />
+                            {selectedWorkflow ? (
+                                <Check className="h-3.5 w-3.5" />
+                            ) : (
+                                <Library className="h-3.5 w-3.5" />
+                            )}
                             Workflows
                         </button>
                     </div>
