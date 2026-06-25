@@ -1374,13 +1374,24 @@ export function TRChatPanel({
 
                         if (data.type === "content_delta") {
                             const text = data.text as string;
-                            dripTargetRef.current += text;
                             const events = eventsRef.current;
                             const lastEvent = events[events.length - 1];
                             if (
                                 lastEvent?.type !== "content" ||
                                 !lastEvent.isStreaming
                             ) {
+                                // A new content block is opening (the model
+                                // emitted text, called a tool, then resumed
+                                // writing). Lock in whatever the previous
+                                // content block had dripped, then RESET the
+                                // drip buffer so this new block starts from
+                                // empty. Without the reset, dripTargetRef
+                                // still holds the prior block's text and it
+                                // gets prepended to (and duplicated in front
+                                // of) the new block.
+                                flushDrip();
+                                dripTargetRef.current = "";
+                                dripDisplayLenRef.current = 0;
                                 // Finalize any still-streaming reasoning
                                 // event AND drop bridging placeholders so
                                 // the wrapper transitions cleanly into
@@ -1416,6 +1427,7 @@ export function TRChatPanel({
                                     return updated;
                                 });
                             }
+                            dripTargetRef.current += text;
                             startDrip();
                             continue;
                         }
