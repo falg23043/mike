@@ -926,12 +926,26 @@ tabularRouter.post("/:reviewId/generate", requireAuth, async (req, res) => {
                 : { data: [] as Record<string, unknown>[] };
         docs = data ?? [];
     } else if (review.project_id) {
-        const { data } = await db
-            .from("documents")
-            .select("id, current_version_id")
-            .eq("project_id", review.project_id)
-            .order("created_at", { ascending: true });
-        docs = data ?? [];
+        // Security: a review can be shared directly (review.shared_with) to a
+        // user who is NOT a member of the underlying project. Without this
+        // gate, that user could trigger the empty-cells fallback and have the
+        // model extract the full content of every document in the project
+        // (cross-tenant exfiltration). Require project access before listing
+        // project documents.
+        const projectAccess = await checkProjectAccess(
+            review.project_id,
+            userId,
+            userEmail,
+            db,
+        );
+        if (projectAccess.ok) {
+            const { data } = await db
+                .from("documents")
+                .select("id, current_version_id")
+                .eq("project_id", review.project_id)
+                .order("created_at", { ascending: true });
+            docs = data ?? [];
+        }
     }
     await attachActiveVersionPaths(
         db,

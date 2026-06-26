@@ -743,6 +743,14 @@ projectsRouter.delete("/:projectId/folders/:folderId", requireAuth, async (req, 
 
   const access = await checkProjectAccess(projectId, userId, userEmail, db);
   if (!access.ok) return void res.status(404).json({ detail: "Project not found" });
+  // Security: deleting a folder cascades into permanent, irreversible deletion
+  // of every nested document and its R2 storage objects. Restrict this to the
+  // project owner so a shared (read/collaborator) member cannot destroy the
+  // owner's data.
+  if (!access.isOwner)
+    return void res
+      .status(403)
+      .json({ detail: "Only the project owner can delete folders" });
 
   const { data: allFolders, error: foldersError } = await db
     .from("project_subfolders")
