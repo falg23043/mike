@@ -32,6 +32,7 @@ import {
     ensureReviewAccess,
     filterAccessibleDocumentIds,
     listAccessibleProjectIds,
+    listAllAuthUsers,
 } from "../lib/access";
 import { safeErrorLog, safeErrorMessage } from "../lib/safeError";
 
@@ -424,12 +425,10 @@ tabularRouter.get("/:reviewId/people", requireAuth, async (req, res) => {
             : []
     ).map((e) => (e ?? "").toLowerCase());
 
-    // Same pattern as /projects/:id/people: walk auth.users to map emails
-    // to user_ids, then pull display_names from user_profiles by user_id.
-    const { data: usersData } = await db.auth.admin.listUsers({
-        perPage: 1000,
-    });
-    const allUsers = usersData?.users ?? [];
+    // Same pattern as /projects/:id/people: map member emails to user_ids,
+    // then pull display_names from user_profiles by user_id. Paged so we
+    // never silently drop members past the first 1000 users.
+    const allUsers = await listAllAuthUsers(db);
     const userByEmail = new Map<string, { id: string; email: string }>();
     const userById = new Map<string, { id: string; email: string }>();
     for (const u of allUsers) {

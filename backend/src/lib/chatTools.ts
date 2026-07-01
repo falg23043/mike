@@ -1396,6 +1396,13 @@ export async function runEditDocument(params: {
     versionNumber: number;
     storagePath: string;
   };
+  /**
+   * The project this chat turn is authorized for (null for personal, non-
+   * project chats). Used as a defense-in-depth ownership gate so a document
+   * id that somehow lands in the in-memory docIndex (e.g. via a replayed
+   * chat-history event) cannot be edited unless it belongs to this scope.
+   */
+  authProjectId?: string | null;
 }): Promise<
   | {
       ok: true;
@@ -1408,14 +1415,24 @@ export async function runEditDocument(params: {
     }
   | { ok: false; error: string }
 > {
-  const { documentId, userId, edits, db, reuseVersion } = params;
+  const { documentId, userId, edits, db, reuseVersion, authProjectId } =
+    params;
 
   const { data: doc } = await db
     .from("documents")
-    .select("id")
+    .select("id, user_id, project_id")
     .eq("id", documentId)
     .single();
   if (!doc) return { ok: false, error: "Document not found." };
+  // Defense-in-depth: the caller pre-authorizes docs via docIndex, but do not
+  // trust that alone for a write. Require the document to be the user's own,
+  // or to belong to the project this chat turn is authorized for.
+  const docRow = doc as { user_id: string; project_id: string | null };
+  const ownsDoc = docRow.user_id === userId;
+  const inAuthorizedProject =
+    authProjectId != null && docRow.project_id === authProjectId;
+  if (!ownsDoc && !inAuthorizedProject)
+    return { ok: false, error: "Document not found." };
 
   const activeVersion = await loadActiveVersion(documentId, db);
   let versionFilename =
@@ -3146,6 +3163,7 @@ export async function runToolCalls(
           edits,
           db,
           reuseVersion,
+          authProjectId: projectId ?? null,
         });
 
         if (result.ok) {

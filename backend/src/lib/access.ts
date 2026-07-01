@@ -15,6 +15,27 @@ import type { createServerSupabase } from "./supabase";
 
 type Db = ReturnType<typeof createServerSupabase>;
 
+/**
+ * List every auth user, paging through the GoTrue admin API instead of a
+ * single `listUsers({ perPage: 1000 })` call. The single-call form silently
+ * truncates at 1000 users, which would make project/review "people" lookups
+ * drop members once a deployment grows past that. Only `id`/`email` are used
+ * by callers, but we return the raw rows to keep typing simple.
+ */
+export async function listAllAuthUsers(
+    db: Db,
+): Promise<{ id: string; email?: string | null }[]> {
+    const all: { id: string; email?: string | null }[] = [];
+    const perPage = 1000;
+    for (let page = 1; page <= 1000; page++) {
+        const { data } = await db.auth.admin.listUsers({ page, perPage });
+        const users = data?.users ?? [];
+        for (const u of users) all.push({ id: u.id, email: u.email });
+        if (users.length < perPage) break;
+    }
+    return all;
+}
+
 export type ProjectAccess =
     | {
           ok: true;

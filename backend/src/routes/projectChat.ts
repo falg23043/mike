@@ -61,10 +61,18 @@ projectChatRouter.post("/", requireAuth, async (req, res) => {
     if (chatId) {
         const { data: existing } = await db
             .from("chats")
-            .select("id, title, project_id")
+            .select("id, title, project_id, user_id")
             .eq("id", chatId)
             .single();
-        const canUse = !!existing && existing.project_id === projectId;
+        // Only reuse a chat the caller actually owns. A project can be shared
+        // with several members and GET /projects/:id/chats lists all of their
+        // chats, so without the user_id check a member could post messages
+        // into a teammate's chat session. Fall through to creating the
+        // caller's own chat instead.
+        const canUse =
+            !!existing &&
+            existing.project_id === projectId &&
+            existing.user_id === userId;
         if (!canUse) chatId = null;
         else chatTitle = existing!.title;
     }
