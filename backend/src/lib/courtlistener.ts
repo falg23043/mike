@@ -83,6 +83,26 @@ async function courtlistenerFetch<T>(
     const url = pathOrUrl.startsWith("http")
         ? pathOrUrl
         : `${COURTLISTENER_BASE}${pathOrUrl}`;
+    // SSRF guard: `pathOrUrl` can be an absolute URL taken verbatim from a
+    // prior API response (pagination `next`). Since we attach the user's
+    // CourtListener token to this request, only allow it to target a
+    // CourtListener-owned host — otherwise a poisoned `next` (upstream/DNS
+    // compromise) could exfiltrate the token to an attacker endpoint.
+    if (pathOrUrl.startsWith("http")) {
+        let host: string;
+        try {
+            host = new URL(url).hostname.toLowerCase();
+        } catch {
+            throw new Error("CourtListener error: invalid URL");
+        }
+        const allowed =
+            host === "courtlistener.com" || host.endsWith(".courtlistener.com");
+        if (!allowed) {
+            throw new Error(
+                `CourtListener error: refusing to follow non-CourtListener host "${host}"`,
+            );
+        }
+    }
     devLog("[courtlistener/api] request", {
         method: init?.method ?? "GET",
         path: pathOrUrl,

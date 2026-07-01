@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, requireMfaIfEnrolled } from "../middleware/auth";
 import { createServerSupabase } from "../lib/supabase";
 import { safeErrorLog } from "../lib/safeError";
 
@@ -61,7 +61,7 @@ usageRouter.get("/me", requireAuth, async (_req, res) => {
 // Optional body { month: "YYYY-MM" } overrides which month to report (defaults
 // to the previous month relative to "now").
 // ---------------------------------------------------------------------------
-usageRouter.post("/admin/send-monthly-report", requireAuth, async (req, res) => {
+usageRouter.post("/admin/send-monthly-report", requireAuth, requireMfaIfEnrolled, async (req, res) => {
     const email = (res.locals.userEmail as string) || "";
     if (!ADMIN_EMAILS.has(email)) {
         return void res.status(403).json({ detail: "Forbidden" });

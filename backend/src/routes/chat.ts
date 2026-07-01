@@ -425,7 +425,8 @@ chatRouter.post("/:chatId/generate-title", requireAuth, async (req, res) => {
         await db
             .from("chats")
             .update({ title })
-            .eq("id", chatId);
+            .eq("id", chatId)
+            .eq("user_id", userId);
 
         res.json({ title });
     } catch (err) {
