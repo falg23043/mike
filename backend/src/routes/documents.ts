@@ -369,6 +369,7 @@ documentsRouter.get("/:documentId/versions", requireAuth, async (req, res) => {
       "id, version_number, source, created_at, filename, file_type, size_bytes, page_count",
     )
     .eq("document_id", documentId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
   res.json({
@@ -815,8 +816,11 @@ documentsRouter.delete(
 
     const { data: versions, error: versionsErr } = await db
       .from("document_versions")
-      .select("id, storage_path, pdf_storage_path, version_number, created_at")
-      .eq("document_id", documentId);
+      .select(
+        "id, storage_path, pdf_storage_path, version_number, created_at, deleted_at",
+      )
+      .eq("document_id", documentId)
+      .is("deleted_at", null);
     if (versionsErr) {
       return void res.status(500).json({ detail: versionsErr.message });
     }
@@ -827,6 +831,7 @@ documentsRouter.delete(
       pdf_storage_path: string | null;
       version_number: number | null;
       created_at: string | null;
+      deleted_at?: string | null;
     }[];
     const target = rows.find((row) => row.id === versionId);
     if (!target)
@@ -852,6 +857,7 @@ documentsRouter.delete(
       doc.current_version_id === versionId
         ? (remaining[0]?.id ?? null)
         : doc.current_version_id;
+    const deletedAt = new Date().toISOString();
 
     if (doc.current_version_id === versionId) {
       const { error: updateErr } = await db
@@ -868,9 +874,15 @@ documentsRouter.delete(
 
     const { error: deleteErr } = await db
       .from("document_versions")
-      .delete()
+      .update({
+        storage_path: null,
+        pdf_storage_path: null,
+        deleted_at: deletedAt,
+        deleted_by: userId,
+      })
       .eq("id", versionId)
-      .eq("document_id", documentId);
+      .eq("document_id", documentId)
+      .is("deleted_at", null);
     if (deleteErr) {
       return void res.status(500).json({ detail: deleteErr.message });
     }
@@ -884,6 +896,7 @@ documentsRouter.delete(
     res.json({
       deleted_version_id: versionId,
       current_version_id: nextCurrentVersionId,
+      deleted_at: deletedAt,
     });
   },
 );
