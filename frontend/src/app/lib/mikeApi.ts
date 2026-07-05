@@ -9,6 +9,7 @@ import type {
     Chat,
     ChatDetailOut,
     CitationAnnotation,
+    ColumnConfig,
     Document,
     Folder,
     Message,
@@ -1012,7 +1013,7 @@ export async function createWorkflow(payload: {
     title: string;
     type: "assistant" | "tabular";
     prompt_md?: string;
-    columns_config?: { index: number; name: string; prompt: string }[];
+    columns_config?: ColumnConfig[];
     practice?: string | null;
 }): Promise<Workflow> {
     return apiRequest<Workflow>("/workflows", {

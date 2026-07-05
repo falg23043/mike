@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+    Copy,
     Download,
     Eye,
     EyeOff,
@@ -22,6 +23,7 @@ export function closeRowActionMenus() {
 
 interface Props {
     onDelete?: () => void;
+    onDuplicate?: () => void;
     onHide?: () => void;
     onUnhide?: () => void;
     onDownload?: () => void;
@@ -39,6 +41,7 @@ interface Props {
 
 export function RowActionMenuItems({
     onDelete,
+    onDuplicate,
     onHide,
     onUnhide,
     onDownload,
@@ -56,6 +59,15 @@ export function RowActionMenuItems({
 }: Props & { onClose: () => void }) {
     return (
         <>
+            {onDuplicate && (
+                <button
+                    onClick={() => { onClose(); onDuplicate(); }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                    <Copy className="h-3.5 w-3.5" />
+                    Duplicate
+                </button>
+            )}
             {onNewSubfolder && (
                 <button
                     onClick={() => { onClose(); onNewSubfolder(); }}

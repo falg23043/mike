@@ -13,6 +13,7 @@ import {
 import {
     listWorkflows,
     deleteWorkflow,
+    createWorkflow,
     listHiddenWorkflows,
     hideWorkflow,
     unhideWorkflow,
@@ -165,6 +166,18 @@ export function WorkflowList() {
         await unhideWorkflow(id).catch(() => {
             setHiddenBuiltinIds((prev) => [...prev, id]);
         });
+    }
+
+    async function handleDuplicateWorkflow(wf: Workflow) {
+        const created = await createWorkflow({
+            title: `${wf.title} (copy)`,
+            type: wf.type,
+            prompt_md: wf.prompt_md ?? undefined,
+            columns_config: wf.columns_config ?? undefined,
+            practice: wf.practice ?? null,
+        });
+        setCustom((prev) => [created, ...prev]);
+        router.push(`/workflows/${created.id}`);
     }
 
     async function handleBulkRemove() {
@@ -560,19 +573,34 @@ export function WorkflowList() {
                                     {wf.is_system ? (
                                         activeTab === "hidden" ? (
                                             <RowActions
+                                                onDuplicate={() =>
+                                                    handleDuplicateWorkflow(wf)
+                                                }
                                                 onUnhide={() =>
                                                     handleUnhideWorkflow(wf.id)
                                                 }
                                             />
                                         ) : (
                                             <RowActions
+                                                onDuplicate={() =>
+                                                    handleDuplicateWorkflow(wf)
+                                                }
                                                 onHide={() =>
                                                     handleHideWorkflow(wf.id)
                                                 }
                                             />
                                         )
-                                    ) : wf.is_owner === false ? null : (
+                                    ) : wf.is_owner === false ? (
                                         <RowActions
+                                            onDuplicate={() =>
+                                                handleDuplicateWorkflow(wf)
+                                            }
+                                        />
+                                    ) : (
+                                        <RowActions
+                                            onDuplicate={() =>
+                                                handleDuplicateWorkflow(wf)
+                                            }
                                             onDelete={async () => {
                                                 await deleteWorkflow(wf.id);
                                                 setCustom((prev) =>
@@ -595,6 +623,10 @@ export function WorkflowList() {
                 workflows={all}
                 workflow={selected}
                 onClose={() => setSelected(null)}
+                onDuplicate={(wf) => {
+                    setSelected(null);
+                    void handleDuplicateWorkflow(wf);
+                }}
             />
 
             <NewWorkflowModal

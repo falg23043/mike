@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
     ChevronDown,
+    Copy,
     Folder,
     MessageSquare,
     Search,
@@ -28,6 +29,7 @@ interface Props {
     workflows: Workflow[];
     workflow: Workflow | null;
     onClose: () => void;
+    onDuplicate?: (workflow: Workflow) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -284,7 +286,7 @@ function TabularPanel({ workflow }: { workflow: Workflow }) {
 // ---------------------------------------------------------------------------
 // DisplayWorkflowModal
 // ---------------------------------------------------------------------------
-export function DisplayWorkflowModal({ workflows, workflow, onClose }: Props) {
+export function DisplayWorkflowModal({ workflows, workflow, onClose, onDuplicate }: Props) {
     const [screen, setScreen] = useState<"select" | "configure">("select");
     const [selected, setSelected] = useState<Workflow | null>(workflow);
     const [listSearch, setListSearch] = useState("");
@@ -554,27 +556,38 @@ export function DisplayWorkflowModal({ workflows, workflow, onClose }: Props) {
                         </div>
 
                         <div className="border-t border-gray-200 px-5 py-3 flex items-center justify-between shrink-0">
-                            {wf.is_system ? (
-                                <button
-                                    onClick={() => {
-                                        router.push(`/workflows/${wf.id}`);
-                                        handleClose();
-                                    }}
-                                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-                                >
-                                    View Page
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        router.push(`/workflows/${wf.id}`);
-                                        handleClose();
-                                    }}
-                                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-                                >
-                                    Edit
-                                </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {wf.is_system ? (
+                                    <button
+                                        onClick={() => {
+                                            router.push(`/workflows/${wf.id}`);
+                                            handleClose();
+                                        }}
+                                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                                    >
+                                        View Page
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            router.push(`/workflows/${wf.id}`);
+                                            handleClose();
+                                        }}
+                                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                                    >
+                                        Edit
+                                    </button>
+                                )}
+                                {onDuplicate && (
+                                    <button
+                                        onClick={() => onDuplicate(wf)}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                                    >
+                                        <Copy className="h-3.5 w-3.5" />
+                                        Duplicate
+                                    </button>
+                                )}
+                            </div>
                             <button
                                 onClick={() => setScreen("configure")}
                                 className="rounded-lg bg-gray-900 px-5 py-2 text-sm font-medium text-white hover:bg-gray-700"
