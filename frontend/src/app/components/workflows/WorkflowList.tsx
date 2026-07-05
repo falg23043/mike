@@ -370,7 +370,7 @@ export function WorkflowList() {
     );
 
     return (
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
             {/* Page header */}
             <PageHeader
                 shrink
@@ -401,7 +401,7 @@ export function WorkflowList() {
             />
 
             {/* Table */}
-            <div className="flex-1 overflow-auto">
+            <div className="w-full overflow-x-auto">
                 <div className="min-w-max">
                     {/* Column headers */}
                     <div className="flex items-center h-8 pr-3 md:pr-10 border-b border-gray-200 text-xs text-gray-500 font-medium select-none">
