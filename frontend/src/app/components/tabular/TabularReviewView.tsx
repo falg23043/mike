@@ -94,7 +94,7 @@ export function TRView({ reviewId, projectId }: Props) {
     const router = useRouter();
     const { profile } = useUserProfile();
     const apiKeys = profile?.apiKeys;
-    const tabularModel = profile?.tabularModel ?? "gemini-3-flash-preview";
+    const tabularModel = profile?.tabularModel ?? "bedrock-claude-sonnet-4-6";
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -289,11 +289,7 @@ export function TRView({ reviewId, projectId }: Props) {
             const response = await streamTabularGeneration(reviewId);
             if (!response.ok) {
                 const payload = await response.json().catch(() => null);
-                const provider =
-                    payload &&
-                    ["claude", "gemini", "openai"].includes(payload.provider)
-                        ? (payload.provider as ModelProvider)
-                        : getModelProvider(tabularModel);
+                const provider = getModelProvider(tabularModel);
                 if (payload?.code === "missing_api_key" && provider) {
                     setApiKeyModalProvider(provider);
                 }

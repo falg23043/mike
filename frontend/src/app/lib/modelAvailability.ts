@@ -1,7 +1,7 @@
 import { SETTINGS_MODELS, type ModelOption } from "../components/assistant/ModelToggle";
 import type { ApiKeyState } from "@/app/lib/mikeApi";
 
-export type ModelProvider = "bedrock" | "gemini";
+export type ModelProvider = "bedrock";
 
 export function getModelProvider(modelId: string): ModelProvider | null {
     const model = SETTINGS_MODELS.find((m) => m.id === modelId);
@@ -11,30 +11,26 @@ export function getModelProvider(modelId: string): ModelProvider | null {
 
 export function isModelAvailable(
     modelId: string,
-    apiKeys: ApiKeyState,
+    _apiKeys: ApiKeyState,
 ): boolean {
-    const provider = getModelProvider(modelId);
-    if (!provider) return false;
-    if (provider === "bedrock") return true; // always available — server-side credentials
-    return isProviderAvailable(provider, apiKeys);
+    // All models are Bedrock, which is always available via server-side
+    // AWS credentials.
+    return getModelProvider(modelId) !== null;
 }
 
 export function isProviderAvailable(
-    provider: ModelProvider,
-    apiKeys: ApiKeyState,
+    _provider: ModelProvider,
+    _apiKeys: ApiKeyState,
 ): boolean {
-    if (provider === "bedrock") return true;
-    return !!apiKeys[provider]?.configured;
+    return true; // bedrock — always available via server-side credentials
 }
 
-export function providerLabel(provider: ModelProvider): string {
-    if (provider === "bedrock") return "AWS Bedrock (Claude)";
-    return "Google (Gemini)";
+export function providerLabel(_provider: ModelProvider): string {
+    return "AWS Bedrock (Claude)";
 }
 
 export function modelGroupToProvider(
-    group: ModelOption["group"],
+    _group: ModelOption["group"],
 ): ModelProvider {
-    if (group === "Bedrock") return "bedrock";
-    return "gemini";
+    return "bedrock";
 }

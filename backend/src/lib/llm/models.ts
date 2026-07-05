@@ -15,25 +15,16 @@ export const BEDROCK_MAIN_MODELS = [
     "bedrock-claude-sonnet-4-6",
 ] as const;
 
-export const GEMINI_MAIN_MODELS = [
-    "gemini-3.1-pro-preview",
-    "gemini-3-flash-preview",
-] as const;
-
 // Low-tier — used for title generation and lightweight extractions.
 export const BEDROCK_LOW_MODELS = ["bedrock-claude-haiku-4-5"] as const;
 
-export const GEMINI_LOW_MODELS = ["gemini-3.1-flash-lite-preview"] as const;
-
 export const DEFAULT_MAIN_MODEL    = "bedrock-claude-opus-4-8";
-export const DEFAULT_TABULAR_MODEL = "bedrock-claude-haiku-4-5";
+export const DEFAULT_TABULAR_MODEL = "bedrock-claude-sonnet-4-6";
 export const DEFAULT_TITLE_MODEL   = "bedrock-claude-haiku-4-5";
 
 const ALL_MODELS = new Set<string>([
     ...BEDROCK_MAIN_MODELS,
-    ...GEMINI_MAIN_MODELS,
     ...BEDROCK_LOW_MODELS,
-    ...GEMINI_LOW_MODELS,
 ]);
 
 // ---------------------------------------------------------------------------
@@ -42,7 +33,6 @@ const ALL_MODELS = new Set<string>([
 
 export function providerForModel(model: string): Provider {
     if (model.startsWith("bedrock-")) return "bedrock";
-    if (model.startsWith("gemini"))   return "gemini";
     throw new Error(`Unknown model id: ${model}`);
 }
 

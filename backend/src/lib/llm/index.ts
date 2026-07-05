@@ -1,5 +1,4 @@
 import { streamBedrock, completeBedrockText } from "./bedrock";
-import { streamGemini, completeGeminiText } from "./gemini";
 import { providerForModel } from "./models";
 import { logTokenUsage } from "./usage";
 import type {
@@ -27,20 +26,15 @@ export type UsageContext = {
 export async function streamChatWithTools(
     params: StreamChatParams & { usageContext?: UsageContext },
 ): Promise<StreamChatResult> {
-    const provider = providerForModel(params.model);
-    const result =
-        provider === "bedrock"
-            ? await streamBedrock(params)
-            : await streamGemini(params);
+    providerForModel(params.model);
+    const result = await streamBedrock(params);
     if (params.usageContext) {
         await logTokenUsage({
             userId: params.usageContext.userId,
             model: params.model,
             usage: result.usage,
             feature: params.usageContext.feature,
-            usedOwnKey:
-                params.usageContext.usedOwnKey ??
-                (provider === "gemini" && !!params.apiKeys?.gemini),
+            usedOwnKey: params.usageContext.usedOwnKey ?? false,
         });
     }
     return result;
@@ -54,20 +48,15 @@ export async function completeText(params: {
     apiKeys?: UserApiKeys;
     usageContext?: UsageContext;
 }): Promise<string> {
-    const provider = providerForModel(params.model);
-    const result: CompleteTextResult =
-        provider === "bedrock"
-            ? await completeBedrockText(params)
-            : await completeGeminiText(params);
+    providerForModel(params.model);
+    const result: CompleteTextResult = await completeBedrockText(params);
     if (params.usageContext) {
         await logTokenUsage({
             userId: params.usageContext.userId,
             model: params.model,
             usage: result.usage,
             feature: params.usageContext.feature,
-            usedOwnKey:
-                params.usageContext.usedOwnKey ??
-                (provider === "gemini" && !!params.apiKeys?.gemini),
+            usedOwnKey: params.usageContext.usedOwnKey ?? false,
         });
     }
     return result.text;

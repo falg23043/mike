@@ -13,9 +13,6 @@
 //   Claude Haiku 4.5     $1 / $5    per M (in/out)
 //   Claude Sonnet 4.6    $3 / $15   per M
 //   Claude Opus (4-8)    $5 / $25   per M
-//   Gemini 3.1 Pro       $2 / $12   per M
-//   Gemini 3 Flash       $0.50 / $3 per M
-//   Gemini 3.1 Flash-Lite$0.25 / $1.50 per M
 // ---------------------------------------------------------------------------
 
 /** Markup applied on top of public list prices. */
@@ -28,10 +25,6 @@ const BASE_LIST_PRICE: Record<string, Rate> = {
     "bedrock-claude-opus-4-8": { input: 5, output: 25 },
     "bedrock-claude-sonnet-4-6": { input: 3, output: 15 },
     "bedrock-claude-haiku-4-5": { input: 1, output: 5 },
-    // Gemini
-    "gemini-3.1-pro-preview": { input: 2, output: 12 },
-    "gemini-3-flash-preview": { input: 0.5, output: 3 },
-    "gemini-3.1-flash-lite-preview": { input: 0.25, output: 1.5 },
 };
 
 // Fallback rate for any unrecognized model id (use Sonnet-tier list price so we

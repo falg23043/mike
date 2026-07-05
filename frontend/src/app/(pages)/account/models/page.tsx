@@ -91,7 +91,7 @@ export default function ModelPreferencesPage() {
                         value={
                             optimisticValues.titleModel ??
                             profile?.titleModel ??
-                            "gemini-3.1-flash-lite-preview"
+                            "bedrock-claude-haiku-4-5"
                         }
                         options={SETTINGS_MODELS}
                         apiKeys={profile?.apiKeys}
@@ -113,7 +113,7 @@ export default function ModelPreferencesPage() {
                         value={
                             optimisticValues.tabularModel ??
                             profile?.tabularModel ??
-                            "gemini-3-flash-preview"
+                            "bedrock-claude-sonnet-4-6"
                         }
                         options={MODELS}
                         apiKeys={profile?.apiKeys}

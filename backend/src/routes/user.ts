@@ -3,7 +3,6 @@ import { requireAuth, requireMfaIfEnrolled } from "../middleware/auth";
 import { createServerSupabase } from "../lib/supabase";
 import {
     DEFAULT_TABULAR_MODEL,
-    DEFAULT_TITLE_MODEL,
     BEDROCK_LOW_MODELS,
     resolveModel,
 } from "../lib/llm";
@@ -148,9 +147,7 @@ async function selectProfile(
 
 function serializeProfile(row: UserProfileRow, apiKeyStatus?: ApiKeyStatus) {
     const creditsUsed = row.message_credits_used ?? 0;
-    const titleFallback = apiKeyStatus?.gemini
-        ? DEFAULT_TITLE_MODEL
-        : BEDROCK_LOW_MODELS[0];
+    const titleFallback = BEDROCK_LOW_MODELS[0];
     return {
         displayName: row.display_name,
         organisation: row.organisation,

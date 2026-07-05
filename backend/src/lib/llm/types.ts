@@ -2,7 +2,7 @@
 // Callers always speak OpenAI-style tools + { role, content } messages; each
 // provider translates internally.
 
-export type Provider = "bedrock" | "gemini";
+export type Provider = "bedrock";
 
 export type OpenAIToolSchema = {
     type: "function";
@@ -37,7 +37,6 @@ export type StreamCallbacks = {
 };
 
 export type UserApiKeys = {
-    gemini?: string | null;
     courtlistener?: string | null;
 };
 
