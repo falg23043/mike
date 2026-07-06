@@ -14,11 +14,7 @@ export type UserModelSettings = {
 };
 
 // Title generation is a lightweight task — always routed to Bedrock Haiku.
-// Falls back to Gemini if the user has a Gemini key and no AWS creds.
-function resolveTitleModel(apiKeys: UserApiKeys): string {
-    const hasAws = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY;
-    if (hasAws) return DEFAULT_TITLE_MODEL; // Bedrock Haiku
-    if (apiKeys.gemini?.trim()) return DEFAULT_TITLE_MODEL;
+function resolveTitleModel(): string {
     return DEFAULT_TITLE_MODEL;
 }
 
@@ -35,7 +31,7 @@ export async function getUserModelSettings(
     const api_keys = await getStoredUserApiKeys(userId, client);
 
     return {
-        title_model: resolveModel(data?.title_model, resolveTitleModel(api_keys)),
+        title_model: resolveModel(data?.title_model, resolveTitleModel()),
         tabular_model: resolveModel(data?.tabular_model, DEFAULT_TABULAR_MODEL),
         api_keys,
     };

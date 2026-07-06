@@ -16,7 +16,7 @@ import type { ApiKeyState } from "@/app/lib/mikeApi";
 export interface ModelOption {
     id: string;
     label: string;
-    group: "Bedrock" | "Google";
+    group: "Bedrock";
 }
 
 export const MODELS: ModelOption[] = [
@@ -31,7 +31,7 @@ export const DEFAULT_MODEL_ID = "bedrock-claude-opus-4-8";
 
 export const ALLOWED_MODEL_IDS = new Set(MODELS.map((m) => m.id));
 
-const GROUP_ORDER: ModelOption["group"][] = ["Bedrock", "Google"];
+const GROUP_ORDER: ModelOption["group"][] = ["Bedrock"];
 
 interface Props {
     value: string;

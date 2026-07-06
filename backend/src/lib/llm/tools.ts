@@ -20,36 +20,12 @@ export function toClaudeTools(tools: OpenAIToolSchema[]): ClaudeTool[] {
     }));
 }
 
-export type GeminiFunctionDeclaration = {
-    name: string;
-    description: string;
-    parameters?: Record<string, unknown>;
-};
-
-export function toGeminiTools(tools: OpenAIToolSchema[]): GeminiFunctionDeclaration[] {
-    return tools.map((t) => {
-        const params = normalizeSchema(t.function.parameters);
-        // Gemini rejects `{ type: "object", properties: {} }` with no fields
-        // present; omit the parameters key entirely when empty.
-        const hasProps =
-            params &&
-            typeof params === "object" &&
-            Object.keys((params as { properties?: Record<string, unknown> }).properties ?? {}).length > 0;
-        return {
-            name: t.function.name,
-            description: t.function.description,
-            ...(hasProps ? { parameters: params } : {}),
-        };
-    });
-}
-
 // ---------------------------------------------------------------------------
 // Schema normalization
 // ---------------------------------------------------------------------------
 // The OpenAI tool schemas in the codebase already use plain JSON-Schema-lite
-// shape. Both Claude and Gemini accept that shape. We only sanitise a couple
-// of edge cases: `integer` is accepted by both, but we make sure arrays have
-// `items` and objects have `properties` so Gemini doesn't error.
+// shape. Claude accepts that shape. We only sanitise a couple of edge cases:
+// we make sure arrays have `items` and objects have `properties`.
 
 function normalizeSchema(schema: unknown): Record<string, unknown> {
     if (!schema || typeof schema !== "object") {

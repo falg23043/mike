@@ -3,12 +3,7 @@ import { createServerSupabase } from "./supabase";
 import type { UserApiKeys } from "./llm";
 
 type Db = ReturnType<typeof createServerSupabase>;
-export type ApiKeyProvider =
-    | "claude"
-    | "gemini"
-    | "openai"
-    | "openrouter"
-    | "courtlistener";
+export type ApiKeyProvider = "courtlistener";
 export type ApiKeySource = "user" | "env" | null;
 export type ApiKeyStatus = Record<ApiKeyProvider, boolean> & {
     sources: Record<ApiKeyProvider, ApiKeySource>;
@@ -21,28 +16,10 @@ type EncryptedKeyRow = {
     auth_tag: string;
 };
 
-const PROVIDERS: ApiKeyProvider[] = [
-    "claude",
-    "gemini",
-    "openai",
-    "openrouter",
-    "courtlistener",
-];
+const PROVIDERS: ApiKeyProvider[] = ["courtlistener"];
 
 function envApiKey(provider: ApiKeyProvider): string | null {
     switch (provider) {
-        case "claude":
-            return (
-                process.env.ANTHROPIC_API_KEY?.trim() ||
-                process.env.CLAUDE_API_KEY?.trim() ||
-                null
-            );
-        case "gemini":
-            return process.env.GEMINI_API_KEY?.trim() || null;
-        case "openai":
-            return process.env.OPENAI_API_KEY?.trim() || null;
-        case "openrouter":
-            return process.env.OPENROUTER_API_KEY?.trim() || null;
         case "courtlistener":
             return process.env.COURTLISTENER_API_TOKEN?.trim() || null;
         default:
@@ -111,16 +88,8 @@ export async function getUserApiKeyStatus(
     db: Db = createServerSupabase(),
 ): Promise<ApiKeyStatus> {
     const status: ApiKeyStatus = {
-        claude: false,
-        gemini: false,
-        openai: false,
-        openrouter: false,
         courtlistener: false,
         sources: {
-            claude: null,
-            gemini: null,
-            openai: null,
-            openrouter: null,
             courtlistener: null,
         },
     };
@@ -154,7 +123,6 @@ export async function getUserApiKeys(
     db: Db = createServerSupabase(),
 ): Promise<UserApiKeys> {
     const apiKeys: UserApiKeys = {
-        gemini: envApiKey("gemini"),
         courtlistener: envApiKey("courtlistener"),
     };
 

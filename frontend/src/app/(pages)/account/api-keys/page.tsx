@@ -15,29 +15,6 @@ import {
     accountGlassSectionClassName,
 } from "../accountStyles";
 
-const MODEL_API_KEY_FIELDS = [
-    {
-        provider: "claude",
-        label: "Anthropic (Claude) API Key",
-        placeholder: "sk-ant-...",
-    },
-    {
-        provider: "gemini",
-        label: "Google (Gemini) API Key",
-        placeholder: "AI...",
-    },
-    {
-        provider: "openai",
-        label: "OpenAI API Key",
-        placeholder: "sk-...",
-    },
-    {
-        provider: "openrouter",
-        label: "OpenRouter API Key",
-        placeholder: "sk-or-...",
-    },
-] as const;
-
 const OTHER_API_KEY_FIELDS = [
     {
         provider: "courtlistener",
@@ -57,39 +34,12 @@ export default function ApiKeysPage() {
                 API Keys
             </h2>
             <p className="text-sm text-gray-500 mb-4">
-                You must provide your own API keys for the app to work or add
-                your API keys into the .env file if you are running your own
-                instance of Mike. All API keys are encrypted in storage.
+                Add an optional CourtListener API key to use the latest
+                CourtListener data, or add it into the .env file if you are
+                running your own instance of Mike. All API keys are encrypted in
+                storage.
             </p>
             <div className={accountGlassSectionClassName}>
-                {MODEL_API_KEY_FIELDS.map((field, index) => (
-                    <div key={field.provider}>
-                        <ApiKeyField
-                            label={field.label}
-                            placeholder={field.placeholder}
-                            hasSavedKey={
-                                !!profile?.apiKeys[field.provider].configured
-                            }
-                            isServerConfigured={
-                                profile?.apiKeys[field.provider].source ===
-                                "env"
-                            }
-                            onSave={(value) =>
-                                updateApiKey(
-                                    field.provider,
-                                    value.trim() || null,
-                                )
-                            }
-                            onRemove={() => updateApiKey(field.provider, null)}
-                        />
-                        {index < MODEL_API_KEY_FIELDS.length - 1 && (
-                            <div className="mx-4 h-px bg-gray-200" />
-                        )}
-                    </div>
-                ))}
-            </div>
-
-            <div className={`mt-8 ${accountGlassSectionClassName}`}>
                 {OTHER_API_KEY_FIELDS.map((field) => (
                     <ApiKeyField
                         key={field.provider}

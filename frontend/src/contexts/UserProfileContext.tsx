@@ -55,20 +55,10 @@ const UserProfileContext = createContext<UserProfileContextType | undefined>(
     undefined,
 );
 
-const API_KEY_PROVIDERS: ApiKeyProvider[] = [
-    "claude",
-    "gemini",
-    "openai",
-    "openrouter",
-    "courtlistener",
-];
+const API_KEY_PROVIDERS: ApiKeyProvider[] = ["courtlistener"];
 
 function emptyApiKeys(): ApiKeyState {
     return {
-        claude: { configured: false, source: null },
-        gemini: { configured: false, source: null },
-        openai: { configured: false, source: null },
-        openrouter: { configured: false, source: null },
         courtlistener: { configured: false, source: null },
     };
 }
@@ -115,8 +105,8 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
                 creditsResetDate: futureResetDate.toISOString(),
                 creditsRemaining: 999999, // temporarily unlimited
                 tier: "Free",
-                titleModel: "gemini-3.1-flash-lite-preview",
-                tabularModel: "gemini-3-flash-preview",
+                titleModel: "bedrock-claude-haiku-4-5",
+                tabularModel: "bedrock-claude-sonnet-4-6",
                 mfaOnLogin: false,
                 apiKeys: emptyApiKeys(),
             });

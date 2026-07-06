@@ -264,12 +264,7 @@ export async function updateUserMfaOnLogin(
     });
 }
 
-export type ApiKeyProvider =
-    | "claude"
-    | "gemini"
-    | "openai"
-    | "openrouter"
-    | "courtlistener";
+export type ApiKeyProvider = "courtlistener";
 export type ApiKeySource = "user" | "env" | null;
 export type ApiKeyState = Record<
     ApiKeyProvider,
