@@ -555,6 +555,33 @@ export async function listStandaloneDocuments(): Promise<Document[]> {
     return apiRequest<Document[]>("/single-documents");
 }
 
+export interface DocumentTemplate {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    fileType: string;
+}
+
+export async function listDocumentTemplates(): Promise<DocumentTemplate[]> {
+    return apiRequest<DocumentTemplate[]>("/single-documents/templates");
+}
+
+export async function createDocumentFromTemplate(
+    templateId: string,
+    opts?: { projectId?: string | null; folderId?: string | null },
+): Promise<Document> {
+    return apiRequest<Document>("/single-documents/from-template", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            template_id: templateId,
+            project_id: opts?.projectId ?? null,
+            folder_id: opts?.folderId ?? null,
+        }),
+    });
+}
+
 export async function deleteDocument(documentId: string): Promise<void> {
     await apiRequest(`/single-documents/${documentId}`, { method: "DELETE" });
 }

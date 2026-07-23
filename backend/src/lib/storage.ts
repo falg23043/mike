@@ -218,6 +218,14 @@ export function versionStorageKey(
   return `documents/${userId}/${docId}/versions/${versionSlug}${storageExtension(filename, ".bin")}`;
 }
 
+/**
+ * System-owned key for a built-in template's source `.docx`. Lives outside
+ * the per-user `documents/{userId}/...` namespace; read-only at runtime.
+ */
+export function templateStorageKey(templateId: string): string {
+  return `templates/system/${templateId}/source.docx`;
+}
+
 function storageExtension(filename: string, fallback: string): string {
   const lastDot = filename.lastIndexOf(".");
   if (lastDot < 0) return fallback;

@@ -9,6 +9,7 @@ import {
   storageKey,
   uploadFile,
   versionStorageKey,
+  templateStorageKey,
 } from "../lib/storage";
 import { docxToPdf, convertedPdfKey } from "../lib/convert";
 import {
@@ -22,6 +23,11 @@ import {
   loadActiveVersion,
 } from "../lib/documentVersions";
 import { ensureDocAccess } from "../lib/access";
+import { checkProjectAccess } from "../lib/access";
+import {
+  BUILTIN_TEMPLATES,
+  getBuiltinTemplate,
+} from "../lib/builtinTemplates";
 import { singleFileUpload } from "../lib/upload";
 
 export const documentsRouter = Router();
@@ -82,6 +88,160 @@ documentsRouter.post(
     await handleDocumentUpload(req, res, userId, null, db);
   },
 );
+
+// GET /single-documents/templates
+// Returns the built-in template bank catalog (no R2 access; pure constant).
+documentsRouter.get("/templates", requireAuth, async (_req, res) => {
+  res.json(
+    BUILTIN_TEMPLATES.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      category: t.category,
+      fileType: t.fileType,
+    })),
+  );
+});
+
+// POST /single-documents/from-template
+// Instantiate a built-in template as a new user-owned document. Near-copy of
+// handleDocumentUpload with the byte source swapped from an uploaded file to
+// the system template blob in R2. Optional project_id/folder_id place it in a
+// project; absent => standalone document.
+documentsRouter.post("/from-template", requireAuth, async (req, res) => {
+  const userId = res.locals.userId as string;
+  const userEmail = res.locals.userEmail as string | undefined;
+  const db = createServerSupabase();
+
+  const templateId =
+    typeof req.body?.template_id === "string" ? req.body.template_id : "";
+  const projectId =
+    typeof req.body?.project_id === "string" && req.body.project_id
+      ? (req.body.project_id as string)
+      : null;
+  const folderId =
+    typeof req.body?.folder_id === "string" && req.body.folder_id
+      ? (req.body.folder_id as string)
+      : null;
+
+  const template = getBuiltinTemplate(templateId);
+  if (!template)
+    return void res.status(400).json({ detail: "Unknown template_id" });
+
+  // If placing into a project, verify access first.
+  if (projectId) {
+    const access = await checkProjectAccess(projectId, userId, userEmail, db);
+    if (!access.ok)
+      return void res.status(404).json({ detail: "Project not found" });
+  }
+
+  const bytes = await downloadFile(templateStorageKey(template.id));
+  if (!bytes)
+    return void res.status(500).json({
+      detail:
+        "Template source not available. The template bank may not be seeded.",
+    });
+
+  const filename = `${template.title}.docx`;
+  const suffix = "docx";
+
+  const { data: doc, error: insertErr } = await db
+    .from("documents")
+    .insert({
+      project_id: projectId,
+      user_id: userId,
+      status: "processing",
+      folder_id: folderId,
+    })
+    .select("*")
+    .single();
+  if (insertErr || !doc)
+    return void res
+      .status(500)
+      .json({ detail: "Failed to create document record" });
+
+  try {
+    const docId = doc.id as string;
+    const key = storageKey(userId, docId, filename);
+    const DOCX_CONTENT_TYPE =
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    await uploadFile(key, bytes, DOCX_CONTENT_TYPE);
+
+    // DOCX -> PDF rendition for display (non-fatal on failure, matches upload).
+    let pdfStoragePath: string | null = null;
+    try {
+      const pdfBuf = await docxToPdf(Buffer.from(bytes));
+      const pdfKey = convertedPdfKey(userId, docId);
+      await uploadFile(
+        pdfKey,
+        pdfBuf.buffer.slice(
+          pdfBuf.byteOffset,
+          pdfBuf.byteOffset + pdfBuf.byteLength,
+        ) as ArrayBuffer,
+        "application/pdf",
+      );
+      pdfStoragePath = pdfKey;
+    } catch (err) {
+      console.error(
+        `[from-template] DOCX→PDF conversion failed for ${filename}:`,
+        err,
+      );
+    }
+
+    const { data: versionRow, error: verErr } = await db
+      .from("document_versions")
+      .insert({
+        document_id: docId,
+        storage_path: key,
+        pdf_storage_path: pdfStoragePath,
+        source: "upload",
+        version_number: 1,
+        filename,
+        file_type: suffix,
+        size_bytes: bytes.byteLength,
+        page_count: null,
+      })
+      .select("id")
+      .single();
+    if (verErr || !versionRow)
+      throw new Error(
+        `Failed to record template version: ${verErr?.message ?? "unknown"}`,
+      );
+
+    await db
+      .from("documents")
+      .update({
+        current_version_id: versionRow.id,
+        status: "ready",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", docId);
+
+    const { data: updated } = await db
+      .from("documents")
+      .select("*")
+      .eq("id", docId)
+      .single();
+    const responseDoc = updated
+      ? {
+          ...updated,
+          filename,
+          storage_path: key,
+          pdf_storage_path: pdfStoragePath,
+          file_type: suffix,
+          size_bytes: bytes.byteLength,
+          page_count: null,
+          active_version_number: 1,
+        }
+      : updated;
+    return void res.status(201).json(responseDoc);
+  } catch (e) {
+    await db.from("documents").update({ status: "error" }).eq("id", doc.id);
+    return void res
+      .status(500)
+      .json({ detail: `Template instantiation failed: ${String(e)}` });
+  }
+});
 
 // DELETE /single-documents/:documentId
 documentsRouter.delete("/:documentId", requireAuth, async (req, res) => {

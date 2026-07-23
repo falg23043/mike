@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { AddDocButton } from "./AddDocButton";
 import { AddDocumentsModal } from "../shared/AddDocumentsModal";
+import { TemplatePickerModal } from "../shared/TemplatePickerModal";
 import { AssistantWorkflowModal } from "./AssistantWorkflowModal";
 import { ApiKeyMissingModal } from "../shared/ApiKeyMissingModal";
 import { ModelToggle } from "./ModelToggle";
@@ -74,6 +75,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
     const controlsRef = useRef<HTMLDivElement>(null);
     const [compactControls, setCompactControls] = useState(false);
     const [docSelectorOpen, setDocSelectorOpen] = useState(false);
+    const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
     const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
     const [apiKeyModalProvider, setApiKeyModalProvider] =
         useState<ModelProvider | null>(null);
@@ -250,6 +252,9 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
                                 <AddDocButton
                                     onSelectDoc={handleAddDocFromProject}
                                     onBrowseAll={() => setDocSelectorOpen(true)}
+                                    onUseTemplate={() =>
+                                        setTemplatePickerOpen(true)
+                                    }
                                     selectedDocIds={attachedDocs.map(
                                         (d) => d.id,
                                     )}
@@ -337,6 +342,11 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
                 onClose={() => setDocSelectorOpen(false)}
                 onSelect={handleAddDocsFromSelector}
                 breadcrumb={["Assistant", "Add Documents"]}
+            />
+            <TemplatePickerModal
+                open={templatePickerOpen}
+                onClose={() => setTemplatePickerOpen(false)}
+                onInstantiated={handleAddDocFromProject}
             />
             <AssistantWorkflowModal
                 open={workflowModalOpen}

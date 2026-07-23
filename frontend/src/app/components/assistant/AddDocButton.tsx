@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { PlusIcon, Upload, LayoutGridIcon, Loader2Icon } from "lucide-react";
+import { PlusIcon, Upload, LayoutGridIcon, Loader2Icon, FileTextIcon } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -14,6 +14,7 @@ import type { Document } from "../shared/types";
 interface Props {
     onSelectDoc: (doc: Document) => void;
     onBrowseAll: () => void;
+    onUseTemplate?: () => void;
     selectedDocIds?: string[];
     hideLabel?: boolean;
 }
@@ -21,6 +22,7 @@ interface Props {
 export function AddDocButton({
     onSelectDoc,
     onBrowseAll,
+    onUseTemplate,
     selectedDocIds = [],
     hideLabel = false,
 }: Props) {
@@ -102,6 +104,15 @@ export function AddDocButton({
                             {uploading ? "Uploading…" : "Upload files"}
                         </span>
                     </DropdownMenuItem>
+                    {onUseTemplate && (
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={onUseTemplate}
+                        >
+                            <FileTextIcon className="h-4 w-4 mr-2 text-gray-500" />
+                            <span className="text-sm">Use template</span>
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={onBrowseAll}
