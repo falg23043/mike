@@ -61,6 +61,14 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
     category: "Confidentiality",
     fileType: "docx",
   },
+  {
+    id: "confidentiality-ip-assignment",
+    title: "Confidentiality and IP Rights Assignment Agreement",
+    description:
+      "Employee/contractor confidentiality and intellectual property rights assignment agreement.",
+    category: "Confidentiality",
+    fileType: "docx",
+  },
 ];
 
 export function getBuiltinTemplate(id: string): BuiltinTemplate | undefined {
