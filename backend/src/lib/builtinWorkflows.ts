@@ -73,4 +73,19 @@ export const BUILTIN_WORKFLOWS: { id: string; title: string; prompt_md: string }
             "15. **Governing Law & Dispute Resolution** — Applicable law, forum, arbitration or litigation, and any mandatory escalation steps\n\n" +
             "Generate the summary as a downloadable Word document.",
     },
+    {
+        id: "builtin-template-editor",
+        title: "Template Editor",
+        prompt_md:
+            "Read the attached agreement thoroughly, then identify all variables in the document in square brackets.\n\n" +
+            "Then provide the user with a list of the variables so that I can send you the information. I want a bullet point list of the variables, and a short description of what they represent (if not self explanatory).\n\n" +
+            "The output should be:\n\n" +
+            "\"Here are all the information that I need to finalize the agreement:\n\n" +
+            "- variable 1\n" +
+            "- variable 2 (this corresponds to XYZ)\n" +
+            "- variable n\n\n" +
+            "Let me know if anything is unclear, otherwise you can provide me with the information and I will send you a revised agreement for your review.\"\n\n" +
+            "When two variables are identical, only list it once.\n\n" +
+            "Then once the user sends you a list of variables, you edit the agreement in tracked changes.",
+    },
 ];
