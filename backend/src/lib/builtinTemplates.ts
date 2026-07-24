@@ -33,8 +33,32 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
     id: "employment-agreement",
     title: "Employment Agreement",
     description:
-      "Standard employment agreement. Start here and describe the role, term, and terms to adapt.",
+      "Standard employment offer letter. Start here and describe the role, term, and terms to adapt.",
     category: "Employment",
+    fileType: "docx",
+  },
+  {
+    id: "employment-agreement-fr",
+    title: "Contrat d'emploi",
+    description:
+      "Lettre d'offre d'emploi standard (français). Décrivez le poste, la durée et les conditions à adapter.",
+    category: "Employment",
+    fileType: "docx",
+  },
+  {
+    id: "independent-contractor-agreement",
+    title: "Independent Contractor Agreement",
+    description:
+      "Standard independent contractor agreement. Describe the services, term, and fees to adapt.",
+    category: "Commercial",
+    fileType: "docx",
+  },
+  {
+    id: "mutual-nda",
+    title: "Mutual NDA",
+    description:
+      "Mutual confidentiality agreement for exploring a potential business relationship.",
+    category: "Confidentiality",
     fileType: "docx",
   },
 ];
