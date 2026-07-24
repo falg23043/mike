@@ -79,13 +79,13 @@ export const BUILTIN_WORKFLOWS: { id: string; title: string; prompt_md: string }
         prompt_md:
             "Read the attached agreement thoroughly, then identify all variables in the document in square brackets.\n\n" +
             "Then provide the user with a list of the variables so that I can send you the information. I want a bullet point list of the variables, and a short description of what they represent (if not self explanatory).\n\n" +
-            "The output should be:\n\n" +
+            "Your output in the chat should be:\n\n" +
             "\"Here are all the information that I need to finalize the agreement:\n\n" +
-            "- variable 1\n" +
-            "- variable 2 (this corresponds to XYZ)\n" +
-            "- variable n\n\n" +
+            "1. variable 1\n" +
+            "2. variable 2 (this corresponds to XYZ)\n" +
+            "3. variable n\n\n" +
             "Let me know if anything is unclear, otherwise you can provide me with the information and I will send you a revised agreement for your review.\"\n\n" +
-            "When two variables are identical, only list it once.\n\n" +
+            "When two variables are conceptually identical (eg. name of the employee, signature name of the employee, person to which the employment agreement is adressed), only list one variable (in this example, the name of the employee). We don't want the user to have to fill in the same information multiple times.\n\n" +
             "Then once the user sends you a list of variables, you edit the agreement in tracked changes.",
     },
 ];
