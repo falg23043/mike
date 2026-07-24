@@ -24,6 +24,7 @@ export default function SignupPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [name, setName] = useState("");
     const [organisation, setOrganisation] = useState("");
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -47,6 +48,13 @@ export default function SignupPage() {
         }
         if (!organisation.trim()) {
             setError("Organisation is required");
+            setLoading(false);
+            return;
+        }
+
+        // Require acceptance of Terms of Use and Privacy Policy
+        if (!acceptedTerms) {
+            setError("You must accept the Terms of Use and Privacy Policy");
             setLoading(false);
             return;
         }
@@ -259,9 +267,44 @@ export default function SignupPage() {
                             </div>
                         )}
 
+                        <div className="flex items-start gap-2">
+                            <input
+                                id="acceptedTerms"
+                                type="checkbox"
+                                checked={acceptedTerms}
+                                onChange={(e) =>
+                                    setAcceptedTerms(e.target.checked)
+                                }
+                                className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-black focus:ring-gray-300"
+                            />
+                            <label
+                                htmlFor="acceptedTerms"
+                                className="text-xs text-gray-600 leading-relaxed"
+                            >
+                                I agree to the{" "}
+                                <Link
+                                    href="/terms"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                >
+                                    Terms of Use
+                                </Link>{" "}
+                                and{" "}
+                                <Link
+                                    href="/privacy"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline"
+                                >
+                                    Privacy Policy
+                                </Link>
+                            </label>
+                        </div>
+
                         <Button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || !acceptedTerms}
                             className="w-full bg-black hover:bg-gray-900 text-white"
                         >
                             {loading ? "Creating account..." : "Sign up"}
