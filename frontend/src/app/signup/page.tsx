@@ -302,6 +302,28 @@ export default function SignupPage() {
                             </label>
                         </div>
 
+                        <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-xs font-medium text-amber-900 mb-1">
+                                Important Notice
+                            </p>
+                            <p className="text-xs text-amber-800 leading-relaxed">
+                                Leviat Labs is a legal information and
+                                benchmarking software application provided by
+                                Leviat Technologies Inc. (the &ldquo;Corporation&rdquo;).
+                                It provides general information, and provides
+                                access to self-help, fill-in-the-blanks forms,
+                                and does not provide legal, financial, tax,
+                                regulatory, compliance, or professional advice,
+                                and it does not create an attorney-client
+                                relationship. The Services are not provided by
+                                the law firm Leviat Legal Inc. AI-generated
+                                output may be inaccurate, incomplete, outdated,
+                                or misleading, and you are solely responsible
+                                for reviewing and verifying it before relying
+                                on it.
+                            </p>
+                        </div>
+
                         <Button
                             type="submit"
                             disabled={loading || !acceptedTerms}
