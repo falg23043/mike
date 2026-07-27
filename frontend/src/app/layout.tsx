@@ -23,7 +23,7 @@ const commutersSans = localFont({
 });
 
 export const metadata: Metadata = {
-    title: "Leviat Legal",
+    title: "Leviat Labs",
     description:
         "AI-powered legal document analysis and contract review platform.",
     icons: {

@@ -107,7 +107,7 @@ export default function SignupPage() {
                 rawMessage.toLowerCase().includes("unauthorized");
             setError(
                 isUnauthorizedDomain
-                    ? "Unauthorized email, please contact Leviat Legal"
+                    ? "Unauthorized email, please contact Leviat Labs"
                     : rawMessage || "An error occurred during signup",
             );
         } finally {
