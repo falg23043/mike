@@ -14,7 +14,7 @@ export default function AboutPage() {
                         The Leviat Labs app is a modified fork of the Mike
                         open-source project available{" "}
                         <a
-                            href="https://github.com/Open-Legal-Products/mike?tab=AGPL-3.0-1-ov-file"
+                            href="https://github.com/Open-Legal-Products/mike"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:underline"
