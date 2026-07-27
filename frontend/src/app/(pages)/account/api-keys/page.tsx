@@ -21,7 +21,7 @@ const OTHER_API_KEY_FIELDS = [
         label: "CourtListener API Key",
         placeholder: "Token...",
         description:
-            "Add a CourtListener API key if you want the latest CourtListener data. Otherwise, Mike will use the bulk data hosted by us.",
+            "Add a CourtListener API key if you want the latest CourtListener data. Otherwise, Leviat Labs will use the bulk data hosted by us.",
     },
 ] as const;
 
@@ -36,7 +36,7 @@ export default function ApiKeysPage() {
             <p className="text-sm text-gray-500 mb-4">
                 Add an optional CourtListener API key to use the latest
                 CourtListener data, or add it into the .env file if you are
-                running your own instance of Mike. All API keys are encrypted in
+                running your own instance of Leviat Labs. All API keys are encrypted in
                 storage.
             </p>
             <div className={accountGlassSectionClassName}>
