@@ -28,7 +28,7 @@ export function SiteLogo({
 
     const logo = (
         <div
-            className={`flex items-center gap-2.5 ${
+            className={`flex items-center gap-2.5 ${sizeClasses[size]} ${
                 animate ? "sidebar-fade-in" : ""
             } ${className}`}
         >
@@ -36,6 +36,11 @@ export function SiteLogo({
                 className={`font-commuters font-semibold uppercase leading-none tracking-wide text-[#02263f] whitespace-nowrap ${sizeClasses[size]}`}
             >
                 Leviat Labs
+            </span>
+            <span
+                className="self-start font-commuters font-medium uppercase leading-none tracking-[0.15em] text-[0.5em] text-[#02263f]/60"
+            >
+                Beta
             </span>
         </div>
     );
