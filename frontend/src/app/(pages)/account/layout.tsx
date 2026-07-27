@@ -20,6 +20,7 @@ const TABS: TabDef[] = [
         label: "Privacy & Data",
         href: "/account/privacy-data",
     },
+    { id: "about", label: "About", href: "/account/about" },
 ];
 
 export default function AccountLayout({
