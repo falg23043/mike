@@ -309,8 +309,8 @@ export default function SignupPage() {
                             <p className="text-xs text-amber-800 leading-relaxed">
                                 Leviat Labs is a legal information and
                                 benchmarking software application provided by
-                                Leviat Technologies Inc. (the &ldquo;Corporation&rdquo;).
-                                It provides general information, and provides
+                                Leviat Technologies Inc. It provides general
+                                information, and provides
                                 access to self-help, fill-in-the-blanks forms,
                                 and does not provide legal, financial, tax,
                                 regulatory, compliance, or professional advice,
