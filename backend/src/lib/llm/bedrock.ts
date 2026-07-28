@@ -94,6 +94,7 @@ export async function streamBedrock(
         let sawThinking = false;
 
         stream.on("streamEvent", (event) => {
+            if (process.env.LOG_RAW_LLM_STREAM !== "true") return;
             const line = JSON.stringify(event);
             console.log("[bedrock raw stream]", line);
             fs.appendFile(RAW_STREAM_LOG_PATH, line + "\n", () => {});
