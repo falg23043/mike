@@ -73,6 +73,7 @@ export async function streamBedrock(
     let fullText = "";
     let inputTokens = 0;
     let outputTokens = 0;
+    let toolsExecutedTotal = 0;
 
     for (let iter = 0; iter < maxIter; iter++) {
         const stream = bedrock.messages.stream({
@@ -92,8 +93,13 @@ export async function streamBedrock(
         });
 
         let sawThinking = false;
+        const iterStart = Date.now();
+        let streamEventCount = 0;
+        let textDeltaCount = 0;
+        let thinkingDeltaCount = 0;
 
         stream.on("streamEvent", (event) => {
+            streamEventCount++;
             if (process.env.LOG_RAW_LLM_STREAM !== "true") return;
             const line = JSON.stringify(event);
             console.log("[bedrock raw stream]", line);
@@ -101,16 +107,45 @@ export async function streamBedrock(
         });
 
         stream.on("text", (delta) => {
+            textDeltaCount++;
             callbacks.onContentDelta?.(delta);
         });
         if (enableThinking) {
             stream.on("thinking", (delta) => {
                 sawThinking = true;
+                thinkingDeltaCount++;
                 callbacks.onReasoningDelta?.(delta);
             });
         }
 
-        const final = await stream.finalMessage();
+        let final;
+        try {
+            final = await stream.finalMessage();
+        } catch (err) {
+            const name = (err as { name?: string })?.name ?? "";
+            const isAbort =
+                name === "AbortError" || name === "APIUserAbortError";
+            if (!isAbort) {
+                console.error(
+                    "[bedrock stream-fail]",
+                    JSON.stringify({
+                        iter,
+                        ms: Date.now() - iterStart,
+                        streamEvents: streamEventCount,
+                        textDeltas: textDeltaCount,
+                        thinkingDeltas: thinkingDeltaCount,
+                        toolsExecutedPriorIters: toolsExecutedTotal,
+                        errName: name || null,
+                        status:
+                            (err as { status?: number })?.status ??
+                            (err as { $metadata?: { httpStatusCode?: number } })
+                                ?.$metadata?.httpStatusCode ??
+                            null,
+                    }),
+                );
+            }
+            throw err;
+        }
         if (sawThinking) callbacks.onReasoningBlockEnd?.();
         const usage = (final as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
         if (usage) {
@@ -146,6 +181,7 @@ export async function streamBedrock(
         }
 
         const results = await runTools(toolCalls);
+        toolsExecutedTotal += toolCalls.length;
 
         messages.push({ role: "assistant", content: assistantBlocks });
         messages.push({
