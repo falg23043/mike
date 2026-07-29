@@ -86,6 +86,7 @@ export const BUILTIN_WORKFLOWS: { id: string; title: string; prompt_md: string }
             "3. variable n\n\n" +
             "Let me know if anything is unclear, otherwise you can provide me with the information and I will send you a revised agreement for your review.\"\n\n" +
             "When two variables are conceptually identical (eg. name of the employee, signature name of the employee, person to which the employment agreement is adressed), only list one variable (in this example, the name of the employee). We don't want the user to have to fill in the same information multiple times.\n\n" +
-            "Then once the user sends you a list of variables, you edit the agreement in tracked changes.",
+            "Then once the user sends you a list of variables, you edit the agreement in tracked changes.\n\n" +
+            "Adapt the language of your response to match the language of the agreement uploaded (French or English).",
     },
 ];
