@@ -1816,7 +1816,7 @@ Rules:
     };
 
     try {
-        await streamChatWithTools({
+        const tabularResult = await streamChatWithTools({
             model,
             systemPrompt: SYSTEM,
             messages: [{ role: "user", content: USER }],
@@ -1838,6 +1838,17 @@ Rules:
                 },
             },
         });
+        // Cell extraction emits JSON lines, not a chat surface, so there is
+        // nowhere to render a user-facing "stopped early" note (a prose line
+        // would just fail JSON.parse and be skipped). Log it instead so a
+        // truncated extraction — which can leave columns unfilled — is visible
+        // in the server logs.
+        if (tabularResult?.stoppedEarly) {
+            console.warn(
+                "[queryTabularAllColumns] stream hit step limit — extraction may be incomplete",
+                { filename },
+            );
+        }
     } catch (err) {
         console.error("[queryTabularAllColumns] stream failed", safeErrorLog(err));
     }

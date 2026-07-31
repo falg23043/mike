@@ -74,6 +74,10 @@ export async function streamBedrock(
     let inputTokens = 0;
     let outputTokens = 0;
     let toolsExecutedTotal = 0;
+    // Set true the moment the model finishes a turn WITHOUT requesting more
+    // tools (a natural finish). If the loop instead exits by exhausting
+    // maxIter, this stays false — meaning we were cut off mid-tool-use.
+    let completedNaturally = false;
 
     for (let iter = 0; iter < maxIter; iter++) {
         const stream = bedrock.messages.stream({
@@ -177,6 +181,7 @@ export async function streamBedrock(
         }
 
         if (stopReason !== "tool_use" || !toolCalls.length || !runTools) {
+            completedNaturally = true;
             break;
         }
 
@@ -194,7 +199,75 @@ export async function streamBedrock(
         });
     }
 
-    return { fullText, usage: { inputTokens, outputTokens } };
+    // If the loop ran out of iterations while the model was still calling
+    // tools, it never got to produce its closing answer — historically this
+    // surfaced as a "task done but blank response". Make one final call with
+    // tools disabled (tool_choice=none) so the model must reply in text,
+    // using every tool_result already appended to `messages`.
+    const stoppedEarly = !completedNaturally;
+    if (stoppedEarly) {
+        const wrapUpStream = bedrock.messages.stream({
+            model: bedrockModelId,
+            system: systemPrompt,
+            messages: messages as Anthropic.MessageParam[],
+            // Keep tools defined so the tool_use/tool_result history stays
+            // valid, but forbid new tool calls to force a text answer.
+            ...(claudeTools.length
+                ? {
+                      tools: claudeTools as unknown as Anthropic.Tool[],
+                      tool_choice: { type: "none" as const },
+                  }
+                : {}),
+            max_tokens: MAX_TOKENS,
+            // Thinking intentionally left off: this is a summarization turn.
+        });
+
+        wrapUpStream.on("text", (delta) => {
+            callbacks.onContentDelta?.(delta);
+        });
+
+        let wrapUp;
+        try {
+            wrapUp = await wrapUpStream.finalMessage();
+        } catch (err) {
+            const name = (err as { name?: string })?.name ?? "";
+            const isAbort =
+                name === "AbortError" || name === "APIUserAbortError";
+            if (!isAbort) {
+                console.error(
+                    "[bedrock wrap-up-fail]",
+                    JSON.stringify({
+                        toolsExecutedPriorIters: toolsExecutedTotal,
+                        errName: name || null,
+                        status:
+                            (err as { status?: number })?.status ??
+                            (err as { $metadata?: { httpStatusCode?: number } })
+                                ?.$metadata?.httpStatusCode ??
+                            null,
+                    }),
+                );
+            }
+            throw err;
+        }
+
+        const wrapUsage = (
+            wrapUp as {
+                usage?: { input_tokens?: number; output_tokens?: number };
+            }
+        ).usage;
+        if (wrapUsage) {
+            inputTokens += wrapUsage.input_tokens ?? 0;
+            outputTokens += wrapUsage.output_tokens ?? 0;
+        }
+        for (const block of wrapUp.content as ContentBlock[]) {
+            if (block.type === "text") {
+                const txt = (block as { text: string }).text;
+                if (typeof txt === "string") fullText += txt;
+            }
+        }
+    }
+
+    return { fullText, usage: { inputTokens, outputTokens }, stoppedEarly };
 }
 
 export async function completeBedrockText(params: {
