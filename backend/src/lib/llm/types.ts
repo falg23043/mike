@@ -67,6 +67,14 @@ export type TokenUsage = {
 export type StreamChatResult = {
     fullText: string;
     usage: TokenUsage;
+    /**
+     * True when the tool loop exhausted `maxIterations` while the model was
+     * still requesting tools (i.e. it was cut off mid-task). In that case a
+     * final no-tools "wrap-up" call is made so `fullText` still carries a
+     * closing answer instead of being blank. Callers can surface a visible
+     * "stopped early" notice off this flag.
+     */
+    stoppedEarly: boolean;
 };
 
 export type CompleteTextResult = {

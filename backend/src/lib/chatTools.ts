@@ -4057,14 +4057,18 @@ export async function runLLMStream(params: {
 
   const selectedModel = resolveModel(model, DEFAULT_MAIN_MODEL);
 
+  // Set from the stream result below; read after the try/catch to decide
+  // whether to surface a "stopped early" notice.
+  let streamStoppedEarly = false;
+
   try {
     throwIfAborted(signal);
-    await streamChatWithTools({
+    const streamResult = await streamChatWithTools({
       model: selectedModel,
       systemPrompt,
       messages: chatMessages,
       tools: activeTools as OpenAIToolSchema[],
-      maxIterations: 10,
+      maxIterations: 20,
       apiKeys,
       enableThinking: true,
       abortSignal: signal,
@@ -4219,6 +4223,7 @@ export async function runLLMStream(params: {
         }));
       },
     });
+    streamStoppedEarly = streamResult.stoppedEarly;
   } catch (err) {
     if (isAbortError(err)) {
       flushPartialTurn({ emit: false });
@@ -4231,6 +4236,16 @@ export async function runLLMStream(params: {
   }
 
   flushText();
+
+  // If the tool loop hit its step limit, bedrock made a forced wrap-up call
+  // so the model still produced closing text (no more blank turns). Surface a
+  // visible notice so the user knows the turn was truncated and can resume.
+  if (streamStoppedEarly) {
+    const notice =
+      '\n\n⚠\ufe0f I reached this turn\'s step limit before fully finishing. The response above reflects my progress so far — reply "continue" to pick up where I left off.';
+    write(`data: ${JSON.stringify({ type: "content_delta", text: notice })}\n\n`);
+    events.push({ type: "content", text: notice });
+  }
 
   // Parse and emit citations from <CITATIONS> block
   const parsedCitations = parseCitations(fullText);
