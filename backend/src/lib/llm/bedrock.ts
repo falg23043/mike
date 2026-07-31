@@ -77,6 +77,51 @@ function toNativeMessages(
     return messages.map((m) => ({ role: m.role, content: m.content }));
 }
 
+// --- Diagnostics helpers (Phase-1: evidence for transient-vs-request-shape) ---
+
+// Rough input-size estimate for failure logs. COUNTS ONLY — never logs message
+// content (PII rule). ~4 chars/token is the usual ballpark.
+function approxInputTokens(messages: NativeMessage[]): number {
+    let chars = 0;
+    for (const m of messages) {
+        if (typeof m.content === "string") chars += m.content.length;
+        else for (const b of m.content) chars += JSON.stringify(b).length;
+    }
+    return Math.round(chars / 4);
+}
+
+// Best-effort read of a response header off an SDK error, tolerating both
+// Headers-like (.get) and plain-object header bags.
+function errHeader(err: unknown, key: string): string | null {
+    const headers = (err as { headers?: unknown })?.headers;
+    if (!headers) return null;
+    try {
+        const getter = (headers as { get?: unknown }).get;
+        if (typeof getter === "function") {
+            return (
+                (headers as { get: (k: string) => string | null }).get(key) ??
+                null
+            );
+        }
+        const rec = headers as Record<string, string>;
+        return rec[key] ?? rec[key.toLowerCase()] ?? null;
+    } catch {
+        return null;
+    }
+}
+
+// AWS request id for correlating with CloudWatch / AWS support.
+function errRequestId(err: unknown): string | null {
+    return (
+        (err as { $metadata?: { requestId?: string } })?.$metadata
+            ?.requestId ??
+        errHeader(err, "x-amzn-requestid") ??
+        errHeader(err, "x-amzn-RequestId") ??
+        (err as { request_id?: string })?.request_id ??
+        null
+    );
+}
+
 export async function streamBedrock(
     params: StreamChatParams,
 ): Promise<StreamChatResult> {
@@ -90,6 +135,7 @@ export async function streamBedrock(
     } = params;
     const maxIter = params.maxIterations ?? MAX_TOOL_ROUNDS;
     const bedrock = client();
+    const region = process.env.AWS_REGION ?? "ca-central-1";
     const bedrockModelId = resolveBedrockModelId(model);
     const claudeTools = toClaudeTools(tools);
 
@@ -165,12 +211,25 @@ export async function streamBedrock(
                         textDeltas: textDeltaCount,
                         thinkingDeltas: thinkingDeltaCount,
                         toolsExecutedPriorIters: toolsExecutedTotal,
+                        model: bedrockModelId,
+                        region,
+                        enableThinking: !!enableThinking,
+                        effort: enableThinking ? THINKING_EFFORT : null,
+                        approxInputTokens: approxInputTokens(messages),
                         errName: name || null,
+                        errClass:
+                            (err as { constructor?: { name?: string } })
+                                ?.constructor?.name ?? null,
                         status:
                             (err as { status?: number })?.status ??
                             (err as { $metadata?: { httpStatusCode?: number } })
                                 ?.$metadata?.httpStatusCode ??
                             null,
+                        requestId: errRequestId(err),
+                        xShouldRetry: errHeader(err, "x-should-retry"),
+                        retryAfter:
+                            errHeader(err, "retry-after") ??
+                            errHeader(err, "retry-after-ms"),
                     }),
                 );
             }
@@ -300,12 +359,23 @@ export async function streamBedrock(
                     "[bedrock wrap-up-fail]",
                     JSON.stringify({
                         toolsExecutedPriorIters: toolsExecutedTotal,
+                        model: bedrockModelId,
+                        region,
+                        approxInputTokens: approxInputTokens(messages),
                         errName: name || null,
+                        errClass:
+                            (err as { constructor?: { name?: string } })
+                                ?.constructor?.name ?? null,
                         status:
                             (err as { status?: number })?.status ??
                             (err as { $metadata?: { httpStatusCode?: number } })
                                 ?.$metadata?.httpStatusCode ??
                             null,
+                        requestId: errRequestId(err),
+                        xShouldRetry: errHeader(err, "x-should-retry"),
+                        retryAfter:
+                            errHeader(err, "retry-after") ??
+                            errHeader(err, "retry-after-ms"),
                     }),
                 );
             }
