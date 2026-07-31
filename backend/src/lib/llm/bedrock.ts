@@ -28,6 +28,16 @@ type NativeMessage = {
 
 const MAX_TOKENS = 16384;
 
+// Single source of truth for the tool-use round cap. Imported by the chat
+// prompt builder so the number the model is TOLD always matches the number
+// the loop actually enforces (they drifted 10 vs 20 once and caused premature
+// stops). Change here, and both the prompt and the loop stay in sync.
+export const MAX_TOOL_ROUNDS = 20;
+
+// How many times we'll nudge a model that ends its turn with no closing text
+// after already running tools (premature empty finish) before giving up.
+const MAX_EMPTY_FINISH_NUDGES = 1;
+
 function client(): AnthropicBedrock {
     const accessKey = process.env.AWS_ACCESS_KEY_ID;
     const secretKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -64,7 +74,7 @@ export async function streamBedrock(
         runTools,
         enableThinking,
     } = params;
-    const maxIter = params.maxIterations ?? 10;
+    const maxIter = params.maxIterations ?? MAX_TOOL_ROUNDS;
     const bedrock = client();
     const bedrockModelId = resolveBedrockModelId(model);
     const claudeTools = toClaudeTools(tools);
@@ -78,6 +88,8 @@ export async function streamBedrock(
     // tools (a natural finish). If the loop instead exits by exhausting
     // maxIter, this stays false — meaning we were cut off mid-tool-use.
     let completedNaturally = false;
+    // Counts premature empty finishes we've already nudged this response.
+    let emptyFinishNudges = 0;
 
     for (let iter = 0; iter < maxIter; iter++) {
         const stream = bedrock.messages.stream({
@@ -160,10 +172,14 @@ export async function streamBedrock(
         const assistantBlocks = final.content as ContentBlock[];
 
         const toolCalls: NormalizedToolCall[] = [];
+        let turnText = "";
         for (const block of assistantBlocks) {
             if (block.type === "text") {
                 const txt = (block as { text: string }).text;
-                if (typeof txt === "string") fullText += txt;
+                if (typeof txt === "string") {
+                    fullText += txt;
+                    turnText += txt;
+                }
             } else if (block.type === "tool_use") {
                 const tu = block as {
                     id: string;
@@ -181,6 +197,38 @@ export async function streamBedrock(
         }
 
         if (stopReason !== "tool_use" || !toolCalls.length || !runTools) {
+            // Premature empty finish: the model ended its turn (not a
+            // tool_use stop) but produced no closing text, AFTER already
+            // running tools this response. That's the "did all the prep,
+            // then stopped right before the edit / with a blank answer"
+            // failure. Nudge it once to actually finish — tools stay ENABLED
+            // (unlike the cap-hit wrap-up below, which disables tools to
+            // force a summary). Here we want it to complete the work.
+            const producedClosingText = turnText.trim().length > 0;
+            if (
+                !producedClosingText &&
+                toolsExecutedTotal > 0 &&
+                runTools &&
+                emptyFinishNudges < MAX_EMPTY_FINISH_NUDGES
+            ) {
+                emptyFinishNudges++;
+                // Keep message history valid: append this (empty) assistant
+                // turn as a non-empty placeholder, then the user nudge.
+                messages.push({
+                    role: "assistant",
+                    content: [{ type: "text", text: "…" }],
+                });
+                messages.push({
+                    role: "user",
+                    content: [
+                        {
+                            type: "text",
+                            text: "You ended your turn without completing the requested change and without giving a final answer. Continue now: perform the remaining edits using the available tools, then provide a short summary of what you changed.",
+                        },
+                    ],
+                });
+                continue;
+            }
             completedNaturally = true;
             break;
         }

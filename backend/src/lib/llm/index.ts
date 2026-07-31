@@ -1,4 +1,5 @@
 import { streamBedrock, completeBedrockText } from "./bedrock";
+export { MAX_TOOL_ROUNDS } from "./bedrock";
 import { providerForModel } from "./models";
 import { logTokenUsage } from "./usage";
 import type {
