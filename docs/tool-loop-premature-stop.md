@@ -91,3 +91,60 @@ distinctly from `end_turn`.
 ## Occurrence log
 - 2026-07-31 ~09:37 EDT — B Capital First Amendment signature-block edit.
   Mode 3 (narrate-then-stop). Retry shortly after **succeeded**. Monitoring.
+
+---
+
+# Bedrock stream 500s (separate issue from the tool-loop stops)
+
+Symptom: `[bedrock stream-fail] ... status:500 InternalServerError`
+"The system encountered an unexpected error during processing. Try your
+request again." surfaced as `AssistantStreamError` at
+`chatTools.ts runLLMStream` → `routes/projectChat.ts:126`.
+
+## Shipped (2026-07-31)
+- `2152b9a` — `BEDROCK_THINKING_EFFORT` env knob (high|medium|low, default
+  high, invalid→high+warn, resolved once at module load) in `bedrock.ts`.
+- `aa0510d` — enriched `[bedrock stream-fail]` + `[bedrock wrap-up-fail]`
+  logs: model, region, enableThinking+effort, approxInputTokens (counts
+  only, no PII), errClass, AWS requestId, x-should-retry / retry-after.
+
+## Evidence log
+- 2026-07-31 ~12:20 EDT — first sample: `iter:0, streamEvents:0, ms:~8500,
+  status:500`. Cold-start failure, pre-enriched logging.
+- 2026-07-31 ~15:29 EDT — enriched sample:
+  `iter:8, ms:7334, streamEvents:0, toolsExecutedPriorIters:8,
+  model:us.anthropic.claude-opus-4-8, region:ca-central-1,
+  enableThinking:true, effort:high, approxInputTokens:29040,
+  errClass:InternalServerError, status:500,
+  requestId:c7ee590c-089a-404d-8728-d391b868678e,
+  xShouldRetry:null, retryAfter:null`.
+  Reads: (1) mid-loop failure (iter 8, after 8 tool rounds), not cold-start
+  — so failures happen at any iter; (2) streamEvents:0 → retry gate is safe
+  at any iter; (3) heavy request (opus + effort:high + ~29k tokens) supports
+  the heavy-request→5xx hypothesis; (4) null retry headers → SDK used its
+  default ≥500 retry path; ms:7334/0-events ≈ ~3 attempts all failing over
+  ~7s = brief but SUSTAINED blip, so a naive extra retry wouldn't have saved
+  this one.
+
+## Region / residency finding (IMPORTANT)
+- `region:ca-central-1` is a **deliberate Canadian data-residency choice**
+  (confirmed by Guillaume 2026-07-31) — do NOT switch it to a us-* region.
+- BUT the model id `us.anthropic.claude-opus-4-8` is a **US cross-region
+  inference profile**: inference routes to US regions regardless of
+  AWS_REGION. So prompt/document data likely already crosses into the US
+  for processing — a potential residency gap independent of the 500s.
+  Open follow-up: check which Claude models are natively invokable from
+  ca-central-1 (or whether a ca.* profile exists) if residency is strict.
+- Net: region stays locked; the cross-geo hop is an accepted low-grade
+  contributing factor. Primary lever is dialing effort down.
+
+## Decisions (2026-07-31)
+- (a) Region: locked to ca-central-1 (residency). Not changing.
+- (b) Effort: set `BEDROCK_THINKING_EFFORT=medium` in the DEPLOYED backend's
+  env vars (platform dashboard, not local .env), then redeploy/restart.
+  Primary active lever.
+- (c) Phase-2 bounded retry: designed but PARKED (not building yet). Design
+  = per-model-call retry, gated on streamEventCount===0, retryable classes
+  only (>=500/429/408/409 + connection/timeout), honor retry-after else
+  backoff+jitter, cap ~2 + wall-clock budget, abort-signal aware, own the
+  retry at app level (client maxRetries=0 for streaming) to avoid stacking.
