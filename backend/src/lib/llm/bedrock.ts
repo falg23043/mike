@@ -38,6 +38,20 @@ export const MAX_TOOL_ROUNDS = 20;
 // after already running tools (premature empty finish) before giving up.
 const MAX_EMPTY_FINISH_NUDGES = 1;
 
+// Output effort for adaptive thinking (Bedrock output_config.effort).
+// Overridable via env WITHOUT a code change; default "high" preserves prior
+// behavior. An invalid value falls back to "high" with a one-time warning so a
+// typo can never reach Bedrock. Resolved once at module load.
+const VALID_EFFORTS = new Set(["high", "medium", "low"]);
+const THINKING_EFFORT: string = (() => {
+    const raw = (process.env.BEDROCK_THINKING_EFFORT ?? "high").toLowerCase();
+    if (VALID_EFFORTS.has(raw)) return raw;
+    console.warn(
+        `[bedrock] invalid BEDROCK_THINKING_EFFORT="${process.env.BEDROCK_THINKING_EFFORT}", falling back to "high"`,
+    );
+    return "high";
+})();
+
 function client(): AnthropicBedrock {
     const accessKey = process.env.AWS_ACCESS_KEY_ID;
     const secretKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -103,7 +117,7 @@ export async function streamBedrock(
             ...(enableThinking
                 ? ({
                       thinking: { type: "adaptive" },
-                      output_config: { effort: "high" },
+                      output_config: { effort: THINKING_EFFORT },
                   } as unknown as Record<string, unknown>)
                 : {}),
         });
