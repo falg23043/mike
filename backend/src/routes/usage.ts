@@ -163,10 +163,21 @@ export async function sendMonthlyReport(
             .select("user_id, display_name, organisation")
             .in("user_id", userIds);
         for (const p of profiles ?? []) {
-            const label =
-                [p.display_name, p.organisation].filter(Boolean).join(" · ") ||
-                (p.user_id as string);
-            nameById.set(p.user_id as string, label);
+            const label = [p.display_name, p.organisation].filter(Boolean).join(" · ");
+            if (label) nameById.set(p.user_id as string, label);
+        }
+
+        // Fall back to the auth email for any user without a usable profile
+        // label, instead of surfacing the raw UUID.
+        const missingIds = userIds.filter((id) => !nameById.has(id));
+        for (const id of missingIds) {
+            try {
+                const { data } = await db.auth.admin.getUserById(id);
+                const email = data?.user?.email;
+                if (email) nameById.set(id, email);
+            } catch {
+                // Leave unresolved; falls back to raw id below.
+            }
         }
     }
 
