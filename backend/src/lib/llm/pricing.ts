@@ -13,6 +13,7 @@
 //   Claude Haiku 4.5     $1 / $5    per M (in/out)
 //   Claude Sonnet 4.6    $3 / $15   per M
 //   Claude Opus (4-8)    $5 / $25   per M
+//   Claude Opus 5        $5 / $25   per M (confirmed 2026-08-05, same as 4.8)
 // ---------------------------------------------------------------------------
 
 /** Markup applied on top of public list prices. */
@@ -22,6 +23,7 @@ type Rate = { input: number; output: number }; // USD per 1M tokens (list)
 
 const BASE_LIST_PRICE: Record<string, Rate> = {
     // Bedrock / Claude
+    "bedrock-claude-opus-5": { input: 5, output: 25 },
     "bedrock-claude-opus-4-8": { input: 5, output: 25 },
     "bedrock-claude-sonnet-4-6": { input: 3, output: 15 },
     "bedrock-claude-haiku-4-5": { input: 1, output: 5 },

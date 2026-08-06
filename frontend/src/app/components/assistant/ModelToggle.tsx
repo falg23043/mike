@@ -20,6 +20,7 @@ export interface ModelOption {
 }
 
 export const MODELS: ModelOption[] = [
+    { id: "bedrock-claude-opus-5",     label: "Claude Opus 5",     group: "Bedrock" },
     { id: "bedrock-claude-opus-4-8",   label: "Claude Opus 4.8",   group: "Bedrock" },
     { id: "bedrock-claude-sonnet-4-6", label: "Claude Sonnet 4.6", group: "Bedrock" },
     { id: "bedrock-claude-haiku-4-5",  label: "Claude Haiku 4.5",  group: "Bedrock" },
@@ -27,7 +28,7 @@ export const MODELS: ModelOption[] = [
 
 export const SETTINGS_MODELS = MODELS;
 
-export const DEFAULT_MODEL_ID = "bedrock-claude-opus-4-8";
+export const DEFAULT_MODEL_ID = "bedrock-claude-opus-5";
 
 export const ALLOWED_MODEL_IDS = new Set(MODELS.map((m) => m.id));
 
