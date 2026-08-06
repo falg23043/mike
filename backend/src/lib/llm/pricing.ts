@@ -16,8 +16,15 @@
 //   Claude Opus 5        $5 / $25   per M (confirmed 2026-08-05, same as 4.8)
 // ---------------------------------------------------------------------------
 
-/** Markup applied on top of public list prices. */
-export const BILLING_MULTIPLIER = 6;
+/**
+ * Markup applied on top of public list prices.
+ *
+ * Changed 6x -> 3x on 2026-08-06 (Guillaume). Note that token_usage rows store
+ * the cost computed at insert time, so historical rows keep the 6x figures —
+ * any period spanning this date shows a blend of both markups. Intentional; no
+ * backfill was performed.
+ */
+export const BILLING_MULTIPLIER = 3;
 
 type Rate = { input: number; output: number }; // USD per 1M tokens (list)
 
