@@ -69,6 +69,38 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
     category: "Intellectual Property",
     fileType: "docx",
   },
+  {
+    id: "confidentiality-ip-assignment-fr",
+    title: "Convention de confidentialité et de droits de propriété intellectuelle",
+    description:
+      "Version française de la convention de confidentialité et de cession des droits de propriété intellectuelle.",
+    category: "Intellectual Property",
+    fileType: "docx",
+  },
+  {
+    id: "mutual-nda-fr",
+    title: "Convention mutuelle de confidentialité",
+    description:
+      "Convention de confidentialité mutuelle pour l'exploration d'une relation d'affaires potentielle.",
+    category: "Confidentiality",
+    fileType: "docx",
+  },
+  {
+    id: "non-compete-non-solicit-fr",
+    title: "Entente de non-concurrence et de non-sollicitation",
+    description:
+      "Entente de non-concurrence et de non-sollicitation pour employés ou contractants.",
+    category: "Employment",
+    fileType: "docx",
+  },
+  {
+    id: "restricted-stock-agreement-fr",
+    title: "Convention d'actions restreintes",
+    description:
+      "Convention d'octroi d'actions restreintes (restricted stock) pour employés ou dirigeants.",
+    category: "Governance",
+    fileType: "docx",
+  },
 ];
 
 export function getBuiltinTemplate(id: string): BuiltinTemplate | undefined {
