@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  MikeApiError,
   streamChat,
   streamProjectChat,
 } from "@/app/lib/mikeApi";
@@ -23,6 +24,20 @@ interface UseAssistantChatOptions {
 function readableStreamError(value: unknown): string {
   if (typeof value === "string" && value.trim()) return value.trim();
   return "Sorry, something went wrong.";
+}
+
+const CONNECTION_INTERRUPTED_MESSAGE =
+  "The connection was interrupted. Please try again.";
+
+/**
+ * MikeApiError carries a message we chose deliberately — safe to show as-is.
+ * Anything else (a bare TypeError like "Failed to fetch" / Firefox's
+ * "NetworkError when attempting to fetch resource.") is the browser's own
+ * wording for a dropped connection, not something we want surfaced verbatim.
+ */
+function readableFetchError(error: unknown): string {
+  if (error instanceof MikeApiError && error.message) return error.message;
+  return CONNECTION_INTERRUPTED_MESSAGE;
 }
 
 function parseCourtlistenerEventCases(value: unknown) {
@@ -367,6 +382,7 @@ export function useAssistantChat({
 
       const decoder = new TextDecoder();
       let buffer = "";
+      let receivedDone = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -381,7 +397,10 @@ export function useAssistantChat({
           if (!trimmed || !trimmed.startsWith("data:")) continue;
 
           const dataStr = trimmed.slice(5).trim();
-          if (dataStr === "[DONE]") continue;
+          if (dataStr === "[DONE]") {
+            receivedDone = true;
+            continue;
+          }
 
           try {
             const data = JSON.parse(dataStr);
@@ -1103,6 +1122,31 @@ export function useAssistantChat({
       setIsResponseLoading(false);
       setIsLoadingCitations(false);
 
+      // The reader loop exited via `done` (socket closed) without ever
+      // seeing the backend's own "[DONE]" sentinel — the connection died
+      // mid-stream rather than the turn finishing normally. Without this
+      // check a killed stream renders as a complete (silently truncated)
+      // answer instead of a visible failure. The backend's own
+      // {type:"error"} path already writes "[DONE]" right after, so this
+      // only fires for a genuine transport drop. Chat-id/title bookkeeping
+      // below still runs — the chat itself may be real even if this turn
+      // got cut off.
+      if (!receivedDone) {
+        finalizeStreamingContent();
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant" && !last.error) {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              ...last,
+              error: CONNECTION_INTERRUPTED_MESSAGE,
+            };
+            return updated;
+          }
+          return prev;
+        });
+      }
+
       const finalChatId = streamedChatId || chatId || null;
       if (finalChatId && finalChatId !== chatId) {
         if (chatId) {
@@ -1165,10 +1209,7 @@ export function useAssistantChat({
         });
       } else {
         finalizeStreamingContent();
-        const errorMessage =
-          error instanceof Error && error.message
-            ? error.message
-            : "Sorry, something went wrong.";
+        const errorMessage = readableFetchError(error);
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last?.role === "assistant") {

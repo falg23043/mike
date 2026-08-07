@@ -81,8 +81,7 @@ export default function GlobalError({
                 <div className="error-container">
                     <h1 className="error-title">Something went wrong</h1>
                     <p className="error-message">
-                        We encountered an unexpected error. This has been logged
-                        and our team will look into it.
+                        We encountered an unexpected error. Please try again.
                     </p>
                     <button
                         className="btn-back"

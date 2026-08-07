@@ -19,8 +19,7 @@ export default function Error({
                     Something went wrong
                 </h1>
                 <p className="text-[0.9375rem] text-gray-500 leading-relaxed mb-8">
-                    We encountered an unexpected error. This has been logged and
-                    our team will look into it.
+                    We encountered an unexpected error. Please try again.
                 </p>
 
                 <Link

@@ -23,6 +23,7 @@ import {
     completeText,
     streamChatWithTools,
 } from "../lib/llm";
+import { startSseHeartbeat } from "../lib/sseHeartbeat";
 import { getUserModelSettings } from "../lib/userSettings";
 import {
     checkProjectAccess,
@@ -937,6 +938,7 @@ tabularRouter.post("/:reviewId/generate", requireAuth, async (req, res) => {
     res.flushHeaders();
 
     const write = (line: string) => res.write(line);
+    const stopHeartbeat = startSseHeartbeat(write);
 
     try {
         await Promise.all(
@@ -1058,6 +1060,7 @@ tabularRouter.post("/:reviewId/generate", requireAuth, async (req, res) => {
             /* ignore */
         }
     } finally {
+        stopHeartbeat();
         res.end();
     }
 });
@@ -1407,7 +1410,9 @@ tabularRouter.post("/:reviewId/chat", requireAuth, async (req, res) => {
     const write = (line: string) => res.write(line);
     const streamAbort = new AbortController();
     let streamFinished = false;
+    const stopHeartbeat = startSseHeartbeat(write);
     res.on("close", () => {
+        stopHeartbeat();
         if (!streamFinished) streamAbort.abort();
     });
 
@@ -1544,6 +1549,7 @@ tabularRouter.post("/:reviewId/chat", requireAuth, async (req, res) => {
             /* ignore */
         }
     } finally {
+        stopHeartbeat();
         streamFinished = true;
         res.end();
     }

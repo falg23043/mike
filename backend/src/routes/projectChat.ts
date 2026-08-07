@@ -18,6 +18,7 @@ import {
 import { getUserApiKeys } from "../lib/userSettings";
 import { checkProjectAccess } from "../lib/access";
 import { safeErrorLog, safeErrorMessage } from "../lib/safeError";
+import { startSseHeartbeat } from "../lib/sseHeartbeat";
 
 const PROJECT_SYSTEM_PROMPT_EXTRA = `PROJECT CONTEXT:
 You are operating within a project folder that contains a collection of legal documents the user has organised for a single matter. The user's questions will usually refer to one or more documents in this project — your job is to find the relevant files to work on. Use list_documents to see what is available and fetch_documents / read_document to pull in any documents you need before answering.
@@ -166,7 +167,9 @@ projectChatRouter.post("/", requireAuth, async (req, res) => {
     const write = (line: string) => res.write(line);
     const streamAbort = new AbortController();
     let streamFinished = false;
+    const stopHeartbeat = startSseHeartbeat(write);
     res.on("close", () => {
+        stopHeartbeat();
         if (!streamFinished) streamAbort.abort();
     });
 
@@ -266,6 +269,7 @@ projectChatRouter.post("/", requireAuth, async (req, res) => {
             /* ignore */
         }
     } finally {
+        stopHeartbeat();
         streamFinished = true;
         res.end();
     }

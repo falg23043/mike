@@ -150,6 +150,7 @@ export async function streamBedrock(
     let completedNaturally = false;
     // Counts premature empty finishes we've already nudged this response.
     let emptyFinishNudges = 0;
+    const runStart = Date.now();
 
     for (let iter = 0; iter < maxIter; iter++) {
         const stream = bedrock.messages.stream({
@@ -302,6 +303,20 @@ export async function streamBedrock(
                 });
                 continue;
             }
+            // Finish-decision log (docs/tool-loop-premature-stop.md's top
+            // evidence gap): every natural finish, whether or not it looks
+            // healthy, so the next occurrence has data instead of guesswork.
+            console.log(
+                "[bedrock finish]",
+                JSON.stringify({
+                    stopReason,
+                    hadClosingText: producedClosingText,
+                    toolRounds: iter + 1,
+                    toolsExecutedTotal,
+                    ms: Date.now() - runStart,
+                    model: bedrockModelId,
+                }),
+            );
             completedNaturally = true;
             break;
         }

@@ -18,6 +18,7 @@ import { completeText } from "../lib/llm";
 import { getUserApiKeys, getUserModelSettings } from "../lib/userSettings";
 import { checkProjectAccess } from "../lib/access";
 import { safeErrorLog, safeErrorMessage } from "../lib/safeError";
+import { startSseHeartbeat } from "../lib/sseHeartbeat";
 
 export const chatRouter = Router();
 
@@ -573,7 +574,9 @@ chatRouter.post("/", requireAuth, async (req, res) => {
     const write = (line: string) => res.write(line);
     const streamAbort = new AbortController();
     let streamFinished = false;
+    const stopHeartbeat = startSseHeartbeat(write);
     res.on("close", () => {
+        stopHeartbeat();
         if (!streamFinished) streamAbort.abort();
     });
 
@@ -675,6 +678,7 @@ chatRouter.post("/", requireAuth, async (req, res) => {
             /* ignore */
         }
     } finally {
+        stopHeartbeat();
         streamFinished = true;
         res.end();
     }
