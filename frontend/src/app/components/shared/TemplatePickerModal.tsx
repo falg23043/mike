@@ -224,10 +224,7 @@ export function TemplatePickerModal({
                                                     onPick={handlePick}
                                                 />
                                             ) : (
-                                                <div
-                                                    aria-hidden
-                                                    className="hidden sm:block"
-                                                />
+                                                <ComingSoonCard language="en" />
                                             )}
                                             {r.fr ? (
                                                 <TemplateCard
@@ -236,10 +233,7 @@ export function TemplatePickerModal({
                                                     onPick={handlePick}
                                                 />
                                             ) : (
-                                                <div
-                                                    aria-hidden
-                                                    className="hidden sm:block"
-                                                />
+                                                <ComingSoonCard language="fr" />
                                             )}
                                         </Fragment>
                                     ))}
@@ -291,5 +285,21 @@ function TemplateCard({
                 </div>
             </div>
         </button>
+    );
+}
+
+function ComingSoonCard({ language }: { language: "en" | "fr" }) {
+    return (
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-dashed border-gray-200 bg-gray-50/50 text-left">
+            <div className="mt-0.5">
+                <FileText className="h-4 w-4 text-gray-300" />
+            </div>
+            <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-400">
+                    {language === "fr" ? "French version" : "English version"}
+                </div>
+                <div className="text-xs text-gray-400">Coming soon</div>
+            </div>
+        </div>
     );
 }
