@@ -134,7 +134,7 @@ export function TemplatePickerModal({
                             : "No templates available"}
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-5 max-h-[50vh] overflow-y-auto">
+                    <div className="flex flex-col gap-5">
                         {grouped.map(([category, items]) => (
                             <div key={category} className="flex flex-col gap-2">
                                 <div className="text-xs font-medium uppercase tracking-wide text-gray-400">
