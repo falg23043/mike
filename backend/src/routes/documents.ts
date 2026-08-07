@@ -27,6 +27,7 @@ import { checkProjectAccess } from "../lib/access";
 import {
   BUILTIN_TEMPLATES,
   getBuiltinTemplate,
+  agreementOrderIndex,
 } from "../lib/builtinTemplates";
 import { singleFileUpload } from "../lib/upload";
 
@@ -97,7 +98,11 @@ documentsRouter.get("/templates", requireAuth, async (_req, res) => {
       id: t.id,
       title: t.title,
       description: t.description,
-      category: t.category,
+      audience: t.audience,
+      language: t.language,
+      agreementKey: t.agreementKey,
+      agreementLabel: t.agreementLabel,
+      agreementOrder: agreementOrderIndex(t.agreementKey),
       fileType: t.fileType,
     })),
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AlertCircle, FileText, Loader2, Search } from "lucide-react";
 import {
     listDocumentTemplates,
@@ -17,6 +17,34 @@ interface Props {
     onInstantiated: (doc: Document) => void;
     projectId?: string | null;
     folderId?: string | null;
+}
+
+const AUDIENCE_ORDER = [
+    "founders",
+    "employees",
+    "freelancers",
+    "other-collaborators",
+] as const;
+
+const AUDIENCE_LABELS: Record<(typeof AUDIENCE_ORDER)[number], string> = {
+    founders: "Founders",
+    employees: "Employees",
+    freelancers: "Freelancers",
+    "other-collaborators": "Other collaborators",
+};
+
+interface TemplateRow {
+    agreementKey: string;
+    agreementLabel: string;
+    order: number;
+    en: DocumentTemplate | null;
+    fr: DocumentTemplate | null;
+}
+
+interface AudienceGroup {
+    audience: string;
+    label: string;
+    rows: TemplateRow[];
 }
 
 export function TemplatePickerModal({
@@ -49,26 +77,72 @@ export function TemplatePickerModal({
             .finally(() => setLoading(false));
     }, [open]);
 
-    const filtered = useMemo(() => {
-        const q = search.trim().toLowerCase();
-        if (!q) return templates;
-        return templates.filter(
-            (t) =>
-                t.title.toLowerCase().includes(q) ||
-                t.description.toLowerCase().includes(q) ||
-                t.category.toLowerCase().includes(q),
-        );
-    }, [templates, search]);
-
-    const grouped = useMemo(() => {
-        const map = new Map<string, DocumentTemplate[]>();
-        for (const t of filtered) {
-            const arr = map.get(t.category) ?? [];
-            arr.push(t);
-            map.set(t.category, arr);
+    // Group by audience, then by agreement, pairing the EN/FR variants of
+    // the same agreement into one row. Built from the unfiltered list so
+    // search (below) can never split a pair across columns.
+    const groups = useMemo<AudienceGroup[]>(() => {
+        const byAudience = new Map<string, Map<string, TemplateRow>>();
+        for (const t of templates) {
+            let rows = byAudience.get(t.audience);
+            if (!rows) {
+                rows = new Map<string, TemplateRow>();
+                byAudience.set(t.audience, rows);
+            }
+            const row =
+                rows.get(t.agreementKey) ??
+                ({
+                    agreementKey: t.agreementKey,
+                    agreementLabel: t.agreementLabel,
+                    order: t.agreementOrder,
+                    en: null,
+                    fr: null,
+                } as TemplateRow);
+            // Unrecognized languages fall into the EN slot rather than
+            // disappearing from the grid.
+            if (t.language === "fr") row.fr = t;
+            else row.en = t;
+            rows.set(t.agreementKey, row);
         }
-        return Array.from(map.entries());
-    }, [filtered]);
+
+        const known = AUDIENCE_ORDER.filter((a) => byAudience.has(a));
+        const unknown = Array.from(byAudience.keys()).filter(
+            (a) => !(AUDIENCE_ORDER as readonly string[]).includes(a),
+        );
+
+        return [...known, ...unknown].map((audience) => ({
+            audience,
+            label:
+                AUDIENCE_LABELS[audience as (typeof AUDIENCE_ORDER)[number]] ??
+                audience,
+            rows: Array.from(byAudience.get(audience)!.values()).sort(
+                (a, b) => a.order - b.order,
+            ),
+        }));
+    }, [templates]);
+
+    // Filter whole rows (not individual cards) so a matching agreement keeps
+    // both its EN and FR cards together, and an agreement label match (e.g.
+    // "non-compete") can surface an FR-only card via English search.
+    const visibleGroups = useMemo<AudienceGroup[]>(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return groups;
+        const hit = (t: DocumentTemplate | null) =>
+            !!t &&
+            (t.title.toLowerCase().includes(q) ||
+                t.description.toLowerCase().includes(q));
+        return groups
+            .map((g) => ({
+                ...g,
+                rows: g.rows.filter(
+                    (r) =>
+                        hit(r.en) ||
+                        hit(r.fr) ||
+                        r.agreementLabel.toLowerCase().includes(q) ||
+                        g.label.toLowerCase().includes(q),
+                ),
+            }))
+            .filter((g) => g.rows.length > 0);
+    }, [groups, search]);
 
     const handlePick = async (template: DocumentTemplate) => {
         if (pendingId) return;
@@ -127,7 +201,7 @@ export function TemplatePickerModal({
                         <AlertCircle className="h-4 w-4 shrink-0" />
                         <span>{loadError}</span>
                     </div>
-                ) : filtered.length === 0 ? (
+                ) : visibleGroups.length === 0 ? (
                     <div className="py-10 text-center text-sm text-gray-400">
                         {search
                             ? "No matching templates"
@@ -135,40 +209,40 @@ export function TemplatePickerModal({
                     </div>
                 ) : (
                     <div className="flex flex-col gap-5">
-                        {grouped.map(([category, items]) => (
-                            <div key={category} className="flex flex-col gap-2">
+                        {visibleGroups.map((g) => (
+                            <div key={g.audience} className="flex flex-col gap-2">
                                 <div className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                                    {category}
+                                    {g.label}
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {items.map((t) => {
-                                        const isPending = pendingId === t.id;
-                                        return (
-                                            <button
-                                                key={t.id}
-                                                type="button"
-                                                disabled={!!pendingId}
-                                                onClick={() => handlePick(t)}
-                                                className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 text-left transition-colors hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
-                                            >
-                                                <div className="mt-0.5">
-                                                    {isPending ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                                                    ) : (
-                                                        <FileText className="h-4 w-4 text-gray-500" />
-                                                    )}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="text-sm font-medium text-gray-900 truncate">
-                                                        {t.title}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 line-clamp-2">
-                                                        {t.description}
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
+                                    {g.rows.map((r) => (
+                                        <Fragment key={r.agreementKey}>
+                                            {r.en ? (
+                                                <TemplateCard
+                                                    template={r.en}
+                                                    pendingId={pendingId}
+                                                    onPick={handlePick}
+                                                />
+                                            ) : (
+                                                <div
+                                                    aria-hidden
+                                                    className="hidden sm:block"
+                                                />
+                                            )}
+                                            {r.fr ? (
+                                                <TemplateCard
+                                                    template={r.fr}
+                                                    pendingId={pendingId}
+                                                    onPick={handlePick}
+                                                />
+                                            ) : (
+                                                <div
+                                                    aria-hidden
+                                                    className="hidden sm:block"
+                                                />
+                                            )}
+                                        </Fragment>
+                                    ))}
                                 </div>
                             </div>
                         ))}
@@ -176,5 +250,46 @@ export function TemplatePickerModal({
                 )}
             </div>
         </Modal>
+    );
+}
+
+function TemplateCard({
+    template,
+    pendingId,
+    onPick,
+}: {
+    template: DocumentTemplate;
+    pendingId: string | null;
+    onPick: (template: DocumentTemplate) => void;
+}) {
+    const isPending = pendingId === template.id;
+    return (
+        <button
+            type="button"
+            disabled={!!pendingId}
+            onClick={() => onPick(template)}
+            className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 text-left transition-colors hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+            <div className="mt-0.5">
+                {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                ) : (
+                    <FileText className="h-4 w-4 text-gray-500" />
+                )}
+            </div>
+            <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-1.5">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                        {template.title}
+                    </div>
+                    <span className="shrink-0 inline-flex items-center rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+                        {template.language === "fr" ? "FR" : "EN"}
+                    </span>
+                </div>
+                <div className="text-xs text-gray-500 line-clamp-2">
+                    {template.description}
+                </div>
+            </div>
+        </button>
     );
 }

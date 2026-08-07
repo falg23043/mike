@@ -559,7 +559,18 @@ export interface DocumentTemplate {
     id: string;
     title: string;
     description: string;
-    category: string;
+    /** Signer-audience group slug; see AUDIENCE_ORDER in TemplatePickerModal. */
+    audience: string;
+    /** "en" | "fr" at the type level, but kept as a plain string at the wire
+     * boundary so an unrecognized value degrades (falls into the EN slot)
+     * instead of failing to compile. */
+    language: string;
+    /** Joins the EN and FR variants of the same agreement. */
+    agreementKey: string;
+    /** Language-neutral agreement name; powers cross-language search. */
+    agreementLabel: string;
+    /** Editorial row order within an audience group. */
+    agreementOrder: number;
     fileType: string;
 }
 
