@@ -24,7 +24,7 @@
  * any period spanning this date shows a blend of both markups. Intentional; no
  * backfill was performed.
  */
-export const BILLING_MULTIPLIER = 3;
+export const BILLING_MULTIPLIER = 4;
 
 type Rate = { input: number; output: number }; // USD per 1M tokens (list)
 
