@@ -30,7 +30,6 @@ type Rate = { input: number; output: number }; // USD per 1M tokens (list)
 
 const BASE_LIST_PRICE: Record<string, Rate> = {
     // Bedrock / Claude
-    "bedrock-claude-opus-5": { input: 5, output: 25 },
     "bedrock-claude-opus-4-8": { input: 5, output: 25 },
     "bedrock-claude-sonnet-4-6": { input: 3, output: 15 },
     "bedrock-claude-haiku-4-5": { input: 1, output: 5 },
