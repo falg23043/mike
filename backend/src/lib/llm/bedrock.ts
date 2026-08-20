@@ -26,7 +26,7 @@ type NativeMessage = {
     content: string | ContentBlock[];
 };
 
-const MAX_TOKENS = 16384;
+const MAX_TOKENS = 32000;
 
 // Single source of truth for the tool-use round cap. Imported by the chat
 // prompt builder so the number the model is TOLD always matches the number
