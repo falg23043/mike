@@ -19,9 +19,10 @@
 /**
  * Markup applied on top of public list prices.
  *
- * Changed 6x -> 3x on 2026-08-06 (Guillaume). Note that token_usage rows store
- * the cost computed at insert time, so historical rows keep the 6x figures —
- * any period spanning this date shows a blend of both markups. Intentional; no
+ * History: 4x (initial, 2026-06-20) -> 6x (2026-06-24) -> 3x (2026-08-06) ->
+ * 4x (2026-08-07, current). Note that token_usage rows store the cost computed
+ * at insert time, so historical rows keep whatever multiplier was live then —
+ * any period spanning a change shows a blend of markups. Intentional; no
  * backfill was performed.
  */
 export const BILLING_MULTIPLIER = 4;
